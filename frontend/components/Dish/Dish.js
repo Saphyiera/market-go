@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Alert, FlatList, Image, TouchableOpacity } from
 import { Calendar } from 'react-native-calendars';
 import { useNavigation } from '@react-navigation/native';
 
-const SERVER_IP = require('../../../backend/constant');
+const { SERVER_IP } = require('../../../backend/constant');
 
 export default function Dish() {
     const navigation = useNavigation();

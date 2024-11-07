@@ -3,7 +3,7 @@ import { FlatList, ActivityIndicator, View, Text, Image, StyleSheet, TouchableOp
 import { useNavigation } from '@react-navigation/native';
 import ItemSearchBar from './ItemSearchBar'
 
-const SERVER_IP = require('../../../backend/constant');
+const { SERVER_IP } = require('../../../backend/constant');
 
 export default function Items() {
     const navagation = useNavigation();

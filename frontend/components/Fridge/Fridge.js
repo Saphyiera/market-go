@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, Button, Alert } from 'react-native';
 import FridgeItem from './FridgeItem';
-const SERVER_IP = require('../../../backend/constant');
+const { SERVER_IP } = require('../../../backend/constant');
 
 const Fridge = ({ route }) => {
     const { userId } = route.params;

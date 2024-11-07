@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Image, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import SERVER_IP from '../../../backend/constant';
+import { SERVER_IP } from '../../../backend/constant';
 
 export default function Recipe({ route }) {
     const { recipeId } = route.params;

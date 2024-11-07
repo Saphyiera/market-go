@@ -1,7 +1,7 @@
 import { Text, Image, ScrollView, StyleSheet, View, ActivityIndicator } from 'react-native';
 import { useEffect, useState } from 'react';
 
-const SERVER_IP = require('../../../backend/constant');
+const { SERVER_IP } = require('../../../backend/constant');
 
 export default function Item({ route }) {
     const { itemId } = route.params;

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Text, TouchableOpacity, Image, StyleSheet, View, Alert } from 'react-native';
-const SERVER_IP = require('../../../backend/constant')
+const { SERVER_IP } = require('../../../backend/constant')
 
 const FridgeItem = ({ item, userId, onDelete }) => {
     const [isExpanded, setIsExpanded] = useState(false);

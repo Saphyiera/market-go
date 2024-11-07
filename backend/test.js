@@ -1,35 +1,43 @@
-const fs = require('fs');
-const axios = require('axios');
 const mysql = require('mysql2');
+const fetch = require('node-fetch'); // Use fetch for node.js
+const { Buffer } = require('buffer');
 
-// MySQL connection
+// Create a connection to your database
 const connection = mysql.createConnection({
-    host: 'localhost', // change to your MySQL host
-    user: 'root', // change to your MySQL username
-    password: 'ROOT', // change to your MySQL password
-    database: 'market', // change to your database name
+    host: 'localhost',
+    user: 'root',
+    password: 'ROOT',
+    database: 'market'
 });
 
-// URL of the image
-const imageUrl = 'https://i.pinimg.com/736x/06/38/e1/0638e1833558ebce0c925bf67c5d7883.jpg';
+// Function to update avatar
+async function updateAvatar(userId) {
+    try {
+        // Fetch image from the URL using fetch
+        const imageUrl = 'https://i.pinimg.com/736x/e5/2d/3d/e52d3d27c318b027edccb37f0541d9d7.jpg';
+        const response = await fetch(imageUrl);
 
-// Download the image and convert to Base64
-axios.get(imageUrl, { responseType: 'arraybuffer' })
-    .then(response => {
-        const imageBuffer = Buffer.from(response.data, 'binary'); // Convert the binary response to a Buffer
-        const base64Image = imageBuffer.toString('base64'); // Convert the Buffer to Base64
+        if (!response.ok) {
+            throw new Error('Failed to fetch the image');
+        }
 
-        // Update the user table with the avatar
-        const query = 'UPDATE user SET avatar = ? WHERE userid = 1';
-        connection.query(query, [base64Image], (err, result) => {
+        // Get the image data as an ArrayBuffer, then convert it to a Buffer
+        const imageArrayBuffer = await response.arrayBuffer();
+        const imageBuffer = Buffer.from(imageArrayBuffer);
+
+        // Query to update the Avatar for the given UserID
+        const query = 'UPDATE user SET Avatar = ? WHERE UserID = ?';
+        connection.execute(query, [imageBuffer, userId], (err, results) => {
             if (err) {
                 console.error('Error updating avatar:', err);
             } else {
-                console.log('Avatar updated successfully!');
+                console.log(`Avatar updated successfully for UserID ${userId}`);
             }
-            connection.end(); // Close the database connection
         });
-    })
-    .catch(err => {
-        console.error('Error downloading image:', err);
-    });
+    } catch (error) {
+        console.error('Error fetching image:', error);
+    }
+}
+
+// Call the function to update avatar for UserID 2
+updateAvatar(1);

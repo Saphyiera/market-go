@@ -54,10 +54,24 @@ function formatItem(data) {
     }))
 }
 
+function formatUserInfo(data) {
+    return {
+        ...data,
+        Avatar: data.Avatar ? data.Avatar.toString('base64') : null,
+    }
+}
+
+const isValidEmail = (email) => /\S+@\S+\.\S+/.test(email);
+
+const isValidPhoneNumber = (phone) => /^\d{10,15}$/.test(phone);
+
 module.exports = {
     formatPlans,
     formatFridgeItems,
     formatRecipes,
     formatRecipe,
-    formatItem
+    formatItem,
+    formatUserInfo,
+    isValidEmail,
+    isValidPhoneNumber
 }

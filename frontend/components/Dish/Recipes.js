@@ -3,7 +3,7 @@ import { TouchableOpacity } from 'react-native';
 import { View, Text, FlatList, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
-const SERVER_IP = require('../../../backend/constant');
+const { SERVER_IP } = require('../../../backend/constant');
 
 const Recipes = () => {
     const navigation = useNavigation();

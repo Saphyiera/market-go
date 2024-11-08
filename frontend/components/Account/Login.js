@@ -33,7 +33,7 @@ const Login = ({ navigation }) => {
 
                 await AsyncStorage.setItem('userID', userID.toString());
 
-                navigation.navigate('Profile');
+                navigation.navigate('Account');
             } else {
                 Alert.alert('Login Failed', data.message);
             }

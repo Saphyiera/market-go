@@ -128,7 +128,8 @@ app.get('/user', (req, res) => {
     });
 });
 
-app.put('/user/info', (req, res) => {
+//Update info
+app.post('/user/info', (req, res) => {
     const { userId, username, email, phoneNumber, introduction } = req.body;
 
     if (!userId || !username || !email || !phoneNumber) {
@@ -162,7 +163,8 @@ app.put('/user/info', (req, res) => {
     );
 });
 
-app.post('/user/avatar/update', upload.single('avatar'), (req, res) => {
+//Update avatar
+app.post('/user/avatar', upload.single('avatar'), (req, res) => {
     const userId = req.body.userId;
 
     if (!userId || !req.file) {
@@ -207,9 +209,6 @@ app.get('/users/avt', (req, res) => {
         res.json({ status: 200, users: results });
     });
 });
-
-
-
 
 app.get('/daily-list/month', (req, res) => {
     const userId = req.query.userId;
@@ -272,6 +271,47 @@ app.post('/daily-list', (req, res) => {
     });
 });
 
+app.get('/daily-list', (req, res) => {
+    const { listId } = req.query;
+
+    connection.query(
+        `SELECT 
+            dl.Cost, dl.DateToBuy,
+            GROUP_CONCAT(li.ItemID) AS ItemIDs,
+            GROUP_CONCAT(li.Amount) AS Amounts,
+            GROUP_CONCAT(i.ItemName) AS ItemNames,
+            GROUP_CONCAT(IFNULL(TO_BASE64(i.ItemImg), '')) AS ItemImgs
+        FROM dailylist dl
+        INNER JOIN listitem li ON dl.ListID = li.ListID
+        INNER JOIN item i ON li.ItemID = i.ItemID
+        WHERE dl.ListID = ?
+        GROUP BY dl.ListID, dl.Cost, dl.DateToBuy`,
+        [listId],
+        (err, result) => {
+            if (err) {
+                console.error(err);
+                res.json({ status: 500, message: "Server error" });
+            }
+            else if (result.length > 0) {
+                const { Cost, DateToBuy, ItemIDs, Amounts, ItemNames, ItemImgs } = result[0];
+
+                const items = ItemIDs.split(',').map((id, index) => ({
+                    ItemID: id,
+                    Amount: Amounts.split(',')[index],
+                    ItemName: ItemNames.split(',')[index],
+                    ItemImg: ItemImgs.split(',')[index] ? ItemImgs.split(',')[index] : null
+                }));
+
+                res.json({
+                    status: 200,
+                    data: { Cost, DateToBuy, Items: items }
+                });
+            } else {
+                res.json({ status: 404, message: "List not found" });
+            }
+        }
+    );
+});
 
 app.post('/item', upload.single('image'), (req, res) => {
     const { itemName, itemDescription } = req.body;
@@ -546,3 +586,128 @@ app.get('/dish-plan/date', (req, res) => {
         }
     })
 })
+
+app.get('/group/user', (req, res) => {
+    const userId = req.query.userId;
+    connection.query(
+        `SELECT gm.GroupID, g.GroupName, g.AdminID, g.GroupImg, u.Username
+         FROM groupmember gm 
+         INNER JOIN \`group\` g ON gm.GroupID = g.GroupID
+         INNER JOIN \`user\` u ON g.AdminID = u.UserID
+         WHERE gm.MemberID = ?`, [userId],
+        (err, result) => {
+            if (err) {
+                console.log(err);
+                res.json({ status: 500, message: "Server error!" });
+            }
+            else if (result.length == 0) {
+                res.json({ status: 404, message: "No group with this userid" });
+            }
+            else {
+                console.log(result);
+                res.json({ status: 200, data: result });
+            }
+        })
+});
+
+app.post('/group/avatar', upload.single('groupimg'), (req, res) => {
+    const groupId = req.body.groupId;
+    const groupImg = req.file.buffer;
+
+    connection.query(
+        `UPDATE \`group\` SET GroupImg = ? WHERE GroupID = ?`,
+        [groupImg, groupId],
+        (err, result) => {
+            if (err) {
+                console.log("Error inserting image:", err);
+                return res.json({ status: 500, message: "Failed to upload image" });
+            }
+            res.json({ status: 200, message: "Image uploaded successfully" });
+        }
+    );
+});
+
+app.get('/group/details', (req, res) => {
+    const groupId = req.query.groupId;
+    connection.query(
+        `SELECT 
+            g.GroupID, g.AdminID, g.GroupName, 
+            IFNULL(TO_BASE64(g.GroupImg), '') AS GroupImg,
+            GROUP_CONCAT(gm.MemberID) AS MemberIDs,
+            GROUP_CONCAT(u.Username) AS Usernames
+        FROM \`group\` g
+        INNER JOIN groupmember gm ON g.GroupID = gm.GroupID
+        INNER JOIN \`user\` u ON u.UserID = gm.MemberID
+        WHERE g.GroupID = ?
+        GROUP BY g.GroupID, g.AdminID, g.GroupName, g.GroupImg`,
+        [groupId],
+        (err, result) => {
+            if (err) {
+                console.error(err);
+                return res.json({ status: 500, message: "An unexpected error occurred" });
+            }
+
+            if (result.length === 0) {
+                return res.json({ status: 404, message: "Group not found" });
+            }
+
+            const groupDetails = {
+                GroupID: result[0].GroupID,
+                AdminID: result[0].AdminID,
+                GroupName: result[0].GroupName,
+                GroupImg: result[0].GroupImg || null,
+                Members: []
+            };
+
+            const memberIds = result[0].MemberIDs ? result[0].MemberIDs.split(',') : [];
+            const usernames = result[0].Usernames ? result[0].Usernames.split(',') : [];
+
+            if (memberIds.length === usernames.length) {
+                for (let i = 0; i < memberIds.length; i++) {
+                    groupDetails.Members.push({
+                        MemberID: memberIds[i],
+                        Username: usernames[i],
+                    });
+                }
+            }
+            console.log(groupDetails)
+            res.json({ status: 200, data: groupDetails });
+        }
+    );
+});
+
+app.get('/group/plans', (req, res) => {
+    const { groupId, month, year } = req.query;
+
+    connection.query(
+        `SELECT 
+            gl.ListID, dl.DateToBuy,
+            GROUP_CONCAT(gl.BuyerID) AS BuyerIDs,
+            GROUP_CONCAT(u.Username) AS Usernames
+        FROM grouplist gl
+        INNER JOIN dailylist dl ON gl.ListID = dl.ListID
+        INNER JOIN \`user\` u ON gl.BuyerID = u.UserID
+        WHERE gl.GroupID = ? 
+            AND YEAR(dl.DateToBuy) = ? 
+            AND MONTH(dl.DateToBuy) = ?
+        GROUP BY gl.ListID, dl.DateToBuy`,
+        [groupId, year, month],
+        (err, result) => {
+            if (err) {
+                console.error(err);
+                res.json({ status: 500, message: "Server error" });
+            } else {
+                const formattedResult = result.map(item => ({
+                    ListID: item.ListID,
+                    DateToBuy: item.DateToBuy,
+                    Buyers: item.BuyerIDs.split(',').map((id, index) => ({
+                        BuyerID: id,
+                        Username: item.Usernames.split(',')[index]
+                    }))
+                }));
+
+                res.json({ status: 200, data: formattedResult });
+            }
+        }
+    );
+});

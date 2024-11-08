@@ -4,12 +4,14 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Buffer } from 'buffer';
 import * as ImagePicker from 'expo-image-picker';
+import { useIsFocused } from '@react-navigation/native';
 import { SERVER_IP, PORT } from '../../../backend/constant';
 
 export default function Account() {
     const [info, setInfo] = useState(null);
     const [loading, setLoading] = useState(true);
     const navigation = useNavigation();
+    const isFocused = useIsFocused();
 
     const fetchUserInfo = async () => {
         try {
@@ -28,8 +30,10 @@ export default function Account() {
     };
 
     useEffect(() => {
-        fetchUserInfo();
-    }, []);
+        if (isFocused) {
+            fetchUserInfo();
+        }
+    }, [isFocused]);
 
     const handleLogout = async () => {
         try {
@@ -49,6 +53,8 @@ export default function Account() {
 
         const pickerResult = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
             quality: 1,
         });
 
@@ -69,7 +75,7 @@ export default function Account() {
                 type: 'image/jpeg'
             });
 
-            const response = await fetch(`http://${SERVER_IP}:${PORT}/user/avatar/update`, {
+            const response = await fetch(`http://${SERVER_IP}:${PORT}/user/avatar`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'multipart/form-data',
@@ -126,7 +132,11 @@ export default function Account() {
                     <Text style={styles.userInfoText}>Intro: {info.Introduction}</Text>
                 </View>
             </View>
-            <Button title="Logout" onPress={handleLogout} color="#e63946" />
+            <View style={styles.buttonContainer}>
+                <Button title='Update Profile' onPress={() => navigation.navigate('Update Profile')} />
+                <View style={styles.buttonSpacer} />
+                <Button title="Logout" onPress={handleLogout} color="#e63946" />
+            </View>
         </ScrollView>
     );
 }
@@ -136,6 +146,12 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#f1faee',
         paddingHorizontal: 20,
+    },
+    buttonContainer: {
+        marginTop: 5,
+    },
+    buttonSpacer: {
+        height: 10,
     },
     profileContainer: {
         backgroundColor: '#fff',

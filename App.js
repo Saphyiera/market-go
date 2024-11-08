@@ -3,6 +3,7 @@ import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
 import { useEffect, useState } from 'react';
+import { useIsFocused } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Home from './frontend/components/Home/Home'
 import Fridge from './frontend/components/Fridge/Fridge'
@@ -19,7 +20,14 @@ import Account from './frontend/components/Account/Account';
 import Login from './frontend/components/Account/Login';
 import Avatars from './frontend/components/Account/Avatars';
 import Signup from './frontend/components/Account/Signup';
-
+import UpdateProfile from './frontend/components/Account/UpdateProfile';
+import Groups from './frontend/components/Group/Groups';
+import Group from './frontend/components/Group/Group';
+import NotAuth from './frontend/components/Utils/NotAuth';
+import Loading from './frontend/components/Utils/Loading';
+import Member from './frontend/components/Group/Member';
+import GroupPlans from './frontend/components/Group/GroupPlans';
+import Plan from './frontend/components/Group/Plan';
 const Drawer = createDrawerNavigator();
 const Stack = createNativeStackNavigator();
 
@@ -74,19 +82,65 @@ const AccountStack = () => {
 
   return (
     <Stack.Navigator initialRouteName={isAuthenticated ? 'Account' : 'Login'}>
-      <Stack.Screen name='Profile' component={Account} options={{ headerShown: false }} />
+      <Stack.Screen name='Account' component={Account} options={{ headerShown: false }} />
       <Stack.Screen name='Login' component={Login} options={{ headerShown: false }} />
       <Stack.Screen name='Signup' component={Signup} options={{ headerShown: false }} />
+      <Stack.Screen name='Update Profile' component={UpdateProfile} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 }
 
+const GroupStack = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const isFocused = useIsFocused();
+
+  useEffect(() => {
+    const checkUserAuth = async () => {
+      try {
+        const userId = await AsyncStorage.getItem('userID');
+        if (userId) {
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+        }
+      } catch (error) {
+        console.error("Error checking user authentication", error);
+        setIsAuthenticated(false);
+      }
+      setLoading(false);
+    };
+
+    if (isFocused) {
+      checkUserAuth();
+    }
+  }, [isFocused]);
+
+  if (loading) {
+    return <Loading />;
+  }
+
+  return (
+    <Stack.Navigator initialRouteName={isAuthenticated ? 'Groups' : 'Group No Auth'}>
+      <Stack.Screen name='Groups' component={Groups} options={{ headerShown: false }} />
+      <Stack.Screen name='Group No Auth' component={NotAuth} options={{ headerShown: false }} />
+      <Stack.Screen name='Group' component={Group} />
+      <Stack.Screen name='Member' component={Member} />
+      <Stack.Screen name='Group Plans' component={GroupPlans} />
+      <Stack.Screen name='Plan' component={Plan} />
+      <Stack.Screen name='Plan Item' component={Item} options={{ title: "Item" }} />
+    </Stack.Navigator>
+  );
+}
+
+
 const AppNavigator = () => {
   return (
     <Drawer.Navigator initialRouteName='Home'>
-      <Drawer.Screen name='Account' component={AccountStack} />
+      <Drawer.Screen name='Profile' component={AccountStack} />
       <Drawer.Screen name='Avatars' component={Avatars} />
       <Drawer.Screen name='Home' component={Home} />
+      <Drawer.Screen name='Groups Screen' component={GroupStack} options={{ title: 'Groups' }} />
       <Drawer.Screen name='Items' component={ItemStack} />
       <Drawer.Screen name='Fridge' component={Fridge} initialParams={{ userId: 0 }} />
       <Drawer.Screen name='Recipes' component={RecipeStack} />

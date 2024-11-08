@@ -1,43 +1,37 @@
-const mysql = require('mysql2');
-const fetch = require('node-fetch'); // Use fetch for node.js
-const { Buffer } = require('buffer');
+const fetch = require('node-fetch');
+const FormData = require('form-data');
+const fs = require('fs');
 
-// Create a connection to your database
-const connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'ROOT',
-    database: 'market'
-});
+async function uploadImage() {
+    const imageUrl = 'https://scontent.fhph2-1.fna.fbcdn.net/v/t1.6435-9/80013976_986310728417765_541154763920637952_n.jpg?stp=dst-jpg_s600x600&_nc_cat=109&ccb=1-7&_nc_sid=127cfc&_nc_eui2=AeEd29QpvpixBx2u3By0LtekFw_TlOKmHHEXD9OU4qYccaibTSaCsFHbULvZ_FxNQOIjbmj_hTACeb9M47B3HTdU&_nc_ohc=lkPwW1GyHooQ7kNvgGpkK47&_nc_zt=23&_nc_ht=scontent.fhph2-1.fna&_nc_gid=AUJPmqt8GSLGNZqA_Fa2oXa&oh=00_AYCWe1Nx30VlJfRfTbn3oJzIxdljFHAkUrT0xu4GjP69Iw&oe=675425C6';
+    const groupId = '2'; // Replace with the actual Group ID
 
-// Function to update avatar
-async function updateAvatar(userId) {
     try {
-        // Fetch image from the URL using fetch
-        const imageUrl = 'https://i.pinimg.com/736x/e5/2d/3d/e52d3d27c318b027edccb37f0541d9d7.jpg';
+        // Fetch the image
         const response = await fetch(imageUrl);
+        if (!response.ok) throw new Error(`Failed to fetch image: ${response.statusText}`);
 
-        if (!response.ok) {
-            throw new Error('Failed to fetch the image');
-        }
+        // Convert the image response to a buffer
+        const buffer = await response.buffer();
 
-        // Get the image data as an ArrayBuffer, then convert it to a Buffer
-        const imageArrayBuffer = await response.arrayBuffer();
-        const imageBuffer = Buffer.from(imageArrayBuffer);
+        // Create form data
+        const form = new FormData();
+        form.append('groupimg', buffer, { filename: 'groupimg.jpg' });
+        form.append('groupId', groupId);
 
-        // Query to update the Avatar for the given UserID
-        const query = 'UPDATE user SET Avatar = ? WHERE UserID = ?';
-        connection.execute(query, [imageBuffer, userId], (err, results) => {
-            if (err) {
-                console.error('Error updating avatar:', err);
-            } else {
-                console.log(`Avatar updated successfully for UserID ${userId}`);
-            }
+        // Upload the image to your server
+        const uploadResponse = await fetch('http://localhost:2811/group/upload', {
+            method: 'POST',
+            body: form,
+            headers: form.getHeaders(),
         });
+
+        const result = await uploadResponse.json();
+        console.log('Upload response:', result);
+
     } catch (error) {
-        console.error('Error fetching image:', error);
+        console.error('Error uploading image:', error);
     }
 }
 
-// Call the function to update avatar for UserID 2
-updateAvatar(1);
+uploadImage();

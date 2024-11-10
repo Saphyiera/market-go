@@ -28,14 +28,23 @@ import Loading from './frontend/components/Utils/Loading';
 import Member from './frontend/components/Group/Member';
 import GroupPlans from './frontend/components/Group/GroupPlans';
 import Plan from './frontend/components/Group/Plan';
+import ItemSearch from './frontend/components/Item/ItemSearch';
+import AddRecipe from './frontend/components/Dish/AddRecipe';
+import AddIngredient from './frontend/components/Dish/AddIngredient';
+import MyRecipes from './frontend/components/Dish/MyRecipes';
+import MyRecipe from './frontend/components/Dish/MyRecipe';
 const Drawer = createDrawerNavigator();
 const Stack = createNativeStackNavigator();
 
 const RecipeStack = () => (
-  <Stack.Navigator initialRouteName="Recipes">
+  <Stack.Navigator initialRouteName="All Recipes">
     <Stack.Screen name="All Recipes" component={Recipes} options={{ headerShown: false }} />
     <Stack.Screen name="Recipe" component={Recipe} />
-    <Drawer.Screen name='Ingredient' component={Item} />
+    <Stack.Screen name='Ingredient' component={Item} />
+    <Stack.Screen name='Add Recipe' component={AddRecipe} />
+    <Stack.Screen name='Add Ingredient' component={AddIngredient} />
+    <Stack.Screen name='My Recipes' component={MyRecipes} />
+    <Stack.Screen name='My Recipe' component={MyRecipe} />
   </Stack.Navigator>
 );
 
@@ -43,7 +52,7 @@ const DishStack = () => (
   <Stack.Navigator initialRouteName='Dish Plan'>
     <Stack.Screen name='Dish Plan' component={Dish} options={{ headerShown: false }} />
     <Stack.Screen name="Dish Recipe" component={DishRecipe} />
-    <Drawer.Screen name='Recipe Ingredient' component={Item} />
+    <Stack.Screen name='Recipe Ingredient' component={Item} />
   </Stack.Navigator>
 )
 
@@ -52,6 +61,7 @@ const ItemStack = () => (
     <Stack.Screen name='All Items' component={Items} options={{ headerShown: false }} />
     <Drawer.Screen name='Item' component={Item} />
     <Drawer.Screen name='Add Item' component={AddItem} />
+    <Drawer.Screen name='Search Item' component={ItemSearch} />
   </Stack.Navigator>
 )
 

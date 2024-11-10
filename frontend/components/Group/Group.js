@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Image, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Button } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { SERVER_IP, PORT } from '../../../backend/constant';
 
 const Group = ({ route, navigation }) => {
@@ -64,11 +65,21 @@ const Group = ({ route, navigation }) => {
                             style={styles.memberContainer}
                             onPress={() => navigation.navigate('Member', { memberId: item.MemberID })}
                         >
-                            <Image
-                                source={{ uri: `data:image/png;base64,${item.MemberAvatar}` }}
-                                style={styles.avatar}
-                            />
-                            <Text style={styles.username}>{item.Username}</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                {item.MemberAvatar ? <Image
+                                    source={{ uri: `data:image/png;base64,${item.MemberAvatar.replace('base64:type250:', '')}` }}
+                                    style={styles.avatar}
+                                /> : null}
+                                <Text style={styles.username}>{item.Username}</Text>
+                            </View>
+                            <View style={styles.iconContainer}>
+                                <TouchableOpacity onPress={() => console.log('Chat with', item.Username)}>
+                                    <MaterialIcons name="chat" size={24} color="skyblue" style={styles.icon} />
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={() => console.log('Tasks for', item.Username)}>
+                                    <MaterialIcons name="assignment" size={24} color="gray" style={styles.icon} />
+                                </TouchableOpacity>
+                            </View>
                         </TouchableOpacity>
                     )}
                 /> : null
@@ -148,6 +159,7 @@ const styles = StyleSheet.create({
         fontStyle: 'italic',
     },
     memberContainer: {
+        justifyContent: 'space-between',
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#fff',
@@ -161,9 +173,9 @@ const styles = StyleSheet.create({
         elevation: 3,
     },
     avatar: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 50,
+        height: 50,
+        borderRadius: 25,
         marginRight: 10,
         backgroundColor: '#ddd',
         borderColor: '#ccc',
@@ -173,6 +185,10 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#333',
         fontWeight: '500',
+    },
+    iconContainer: {
+        flexDirection: 'column',
+        alignItems: 'center',
     },
 });
 

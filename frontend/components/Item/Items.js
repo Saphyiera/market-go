@@ -1,18 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, ActivityIndicator, View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { FlatList, ActivityIndicator, View, Text, Image, StyleSheet, TouchableOpacity, Alert, TextInput, Button } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import ItemSearchBar from './ItemSearchBar'
-
 const { SERVER_IP } = require('../../../backend/constant');
 
+
 export default function Items() {
-    const navagation = useNavigation();
+    const navigation = useNavigation();
     const [items, setItems] = useState([]);
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(true);
     const [hasMore, setHasMore] = useState(true);
+    const [showUtils, setShowUtils] = useState(false);
 
     const fetchItems = async () => {
+
         if (!hasMore) return;
 
         setLoading(true);
@@ -43,30 +44,36 @@ export default function Items() {
         }
     };
 
-    const handleSearch = async (q = { query: '', type: 'name' }) => {
-        const { query, type } = q;
-        console.log(query, type);
-        const endpoint = (type === 'ID' ? `?id=${query}` : `?name=${query}`);
-        try {
-            const response = await fetch(`http://${SERVER_IP}:2811/item${endpoint}`);
-            const data = await response.json();
-            console.log(data);
-        }
-        catch (error) {
-            console.log("Here: " + error);
-        }
-        finally {
-            setHasMore(false);
-        }
-    }
+
+    const toggleUtils = () => {
+        setShowUtils(!showUtils);
+    };
 
     return (
         <>
             <View style={styles.container}>
-                <ItemSearchBar onSearch={handleSearch}></ItemSearchBar>
+                <TouchableOpacity onPress={toggleUtils} style={styles.utilsContainer}>
+                    <Text style={styles.utilsTitle}>Actions</Text>
+                    {showUtils && (
+                        <View style={styles.buttonContainer}>
+                            <TouchableOpacity
+                                style={styles.actionButton}
+                                onPress={() => navigation.navigate('Add Item')}
+                            >
+                                <Text style={styles.buttonText}>Add item</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.actionButton}
+                                onPress={() => navigation.navigate('Search Item')}
+                            >
+                                <Text style={styles.buttonText}>Search Item</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                </TouchableOpacity>
                 <FlatList
                     data={items}
-                    keyExtractor={(item, index) => item.ItemID ? item.ItemID.toString() : `item-${index}`}
+                    keyExtractor={(item, index) => `${item}-${index}`}
                     onEndReached={handleLoadMore}
                     onEndReachedThreshold={0.1}
                     renderItem={({ item }) => (
@@ -74,7 +81,7 @@ export default function Items() {
                             <TouchableOpacity
                                 style={styles.itemContainer}
                                 onPress={() => {
-                                    navagation.navigate('Item', { itemId: item.ItemID })
+                                    navigation.navigate('Item', { itemId: item.ItemID })
                                 }}
                             >
                                 <View style={styles.itemRow}>
@@ -143,5 +150,35 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: 'gray',
         fontStyle: 'italic'
+    },
+    utilsContainer: {
+        padding: 10,
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    utilsTitle: {
+        fontSize: 18,
+        color: 'black',
+        fontWeight: 'bold',
+    },
+    buttonContainer: {
+        overflow: 'hidden',
+        marginTop: 10,
+        alignItems: 'center',
+        width: '100%',
+    },
+    actionButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#3867d6',
+        padding: 10,
+        borderRadius: 6,
+        marginVertical: 5,
+        width: '90%',
+    },
+    buttonText: {
+        color: 'white',
+        fontSize: 16,
+        marginLeft: 10,
     },
 });

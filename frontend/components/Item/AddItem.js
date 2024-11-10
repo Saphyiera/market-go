@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Button, TextInput, Text, Alert, Image, StyleSheet } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
-const SERVER_IP = require('../../../backend/constant');
+const { SERVER_IP } = require('../../../backend/constant');
 
 export default function AddItem() {
     const [itemName, setItemName] = useState('');

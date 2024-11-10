@@ -1,3 +1,4 @@
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useState } from 'react';
 import { Text, TouchableOpacity, Image, StyleSheet, View, Alert } from 'react-native';
 const { SERVER_IP } = require('../../../backend/constant')
@@ -62,7 +63,7 @@ const FridgeItem = ({ item, userId, onDelete }) => {
                         )}
 
                         <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-                            <Text style={styles.deleteButtonText}>Remove</Text>
+                            <MaterialIcons name="delete-outline" size={24} color="white" />
                         </TouchableOpacity>
                     </View>
                 </>

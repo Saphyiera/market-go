@@ -1,23 +1,32 @@
 import React, { useEffect, useState } from 'react';
-import { Button, TouchableOpacity } from 'react-native';
+import { TouchableOpacity } from 'react-native';
 import { View, Text, FlatList, StyleSheet, Image, ActivityIndicator } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Buffer } from 'buffer';
+import { AntDesign } from '@expo/vector-icons';
+const { SERVER_IP, PORT } = require('../../../backend/constant');
 
-const { SERVER_IP } = require('../../../backend/constant');
-
-const Recipes = () => {
+const MyRecipes = () => {
     const navigation = useNavigation();
+    const isFocused = useIsFocused();
     const [recipes, setRecipes] = useState([]);
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(false);
     const [hasMore, setHasMore] = useState(true);
+    const [userId, setUserId] = useState(-1);
 
     const fetchRecipes = async () => {
         if (loading || !hasMore) return;
 
         setLoading(true);
         try {
-            const response = await fetch(`http://${SERVER_IP}:2811/recipe/all?page=${page}`);
+            const uid = await AsyncStorage.getItem('userID');
+            console.log(uid);
+            if (uid) {
+                setUserId(uid);
+            }
+            const response = await fetch(`http://${SERVER_IP}:${PORT}/recipe/owner?userId=${uid}&page=${page}`);
             const result = await response.json();
 
             if (result.status === 200) {
@@ -34,22 +43,24 @@ const Recipes = () => {
     };
 
     useEffect(() => {
-        fetchRecipes();
-    }, [page]);
+        if (isFocused) {
+            fetchRecipes();
+        }
+    }, [page, isFocused]);
 
     const renderRecipeItem = ({ item, navigation }) => (
         <TouchableOpacity
             key={item.RecipeID}
             style={styles.recipeContainer}
             onPress={() => {
-                navigation.navigate('Recipe', { recipeId: item.RecipeID });
+                navigation.navigate('My Recipe', { recipeId: item.RecipeID, ownerId: userId });
             }}
         >
             <View style={styles.imageContainer}>
                 {
                     item.RecipeImg ? (
                         <Image
-                            source={{ uri: `data:image/png;base64,${item.RecipeImg}` }}
+                            source={{ uri: `data:image/png;base64,${Buffer.from(item.RecipeImg).toString('base64')}` }}
                             style={styles.recipeImage}
                         />
                     ) : (
@@ -59,15 +70,43 @@ const Recipes = () => {
             </View>
             <View style={styles.textContainer}>
                 <Text style={styles.recipeName}>{item.RecipeName}</Text>
-                <Text style={styles.recipeUser}>By {item.Username}</Text>
             </View>
+            <TouchableOpacity
+                onPress={() => {
+                    setRecipes(prev => prev.filter((i) => i.RecipeID != item.RecipeID));
+                }
+                }
+                style={styles.deleteButton}
+            >
+                <AntDesign name='delete' size={20} color='white' />
+            </TouchableOpacity>
         </TouchableOpacity>
     );
 
+    // const handleDelete = async (recipeId) => {
+    //     const response = await fetch(`http://${SERVER_IP}:${PORT}/recipe?recipeId=${recipeId}`, {
+    //         method: 'DELETE'
+    //     })
+    //     const result = await response.json();
+    //     if (result.status == 200) {
+    //         Alert.alert("Success");
+    //         setRecipes((prev) => prev.filter((i) => i.RecipeID !== recipeId));
+    //     } else {
+    //         Alert.alert("Fail", result.message);
+    //     }
+    // }
+
+    if (userId === -1) {
+        return (
+            <View style={styles.messageContainer}>
+                <Text style={styles.messageText}>You must login to see your recipes!</Text>
+            </View>
+        );
+    }
+
+
     return (
         <View style={styles.container}>
-            <Button title='Add recipe' onPress={() => navigation.navigate('Add Recipe')}></Button>
-            <Button title='My recipes' onPress={() => navigation.navigate('My Recipes')}></Button>
             <FlatList
                 data={recipes}
                 renderItem={(props) => renderRecipeItem({ ...props, navigation })}
@@ -98,6 +137,7 @@ const styles = StyleSheet.create({
         shadowColor: '#000',
         shadowOpacity: 0.1,
         shadowRadius: 5,
+        position: 'relative',
     },
     imageContainer: {
         marginRight: 10,
@@ -125,10 +165,33 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
     },
-    recipeUser: {
-        fontSize: 14,
-        color: '#6c757d',
+    messageContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        padding: 20,
+    },
+    messageText: {
+        fontSize: 18,
+        color: "#555",
+    },
+    buttonContainer: {
+        backgroundColor: "1000F0"
+    },
+    buttonText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
+    deleteButton: {
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        backgroundColor: '#ff4d4d',
+        paddingVertical: 5,
+        paddingHorizontal: 10,
+        borderRadius: 5,
     },
 });
 
-export default Recipes;
+export default MyRecipes;

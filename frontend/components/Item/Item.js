@@ -1,5 +1,7 @@
 import { Text, Image, ScrollView, StyleSheet, View, ActivityIndicator } from 'react-native';
 import { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import AddFridgeItem from './AddFridgeItem';
 
 const { SERVER_IP } = require('../../../backend/constant');
 
@@ -7,10 +9,15 @@ export default function Item({ route }) {
     const { itemId } = route.params;
     const [item, setItem] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [userId, setUserId] = useState(-1);
 
     useEffect(() => { fetchItem() }, []);
 
     const fetchItem = async () => {
+        const uid = await AsyncStorage.getItem('userID');
+        if (uid) {
+            setUserId(uid);
+        }
         try {
             const response = await fetch(`http://${SERVER_IP}:2811/item?id=${itemId}`);
             const result = await response.json();
@@ -43,11 +50,16 @@ export default function Item({ route }) {
             ) : (
                 <Text style={styles.noImageText}>No image available</Text>
             )}
+            {
+                userId != -1
+                    ? <AddFridgeItem userId={userId} itemId={itemId} />
+                    : null
+            }
             <View style={styles.textContainer}>
                 <Text style={styles.name}>{item.ItemName}</Text>
                 <Text style={styles.description}>{item.ItemDescription}</Text>
             </View>
-        </ScrollView>
+        </ScrollView >
     );
 }
 

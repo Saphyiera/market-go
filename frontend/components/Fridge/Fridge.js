@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, Button, Alert } from 'react-native';
 import FridgeItem from './FridgeItem';
+import { useIsFocused } from '@react-navigation/native';
 const { SERVER_IP } = require('../../../backend/constant');
 
 const Fridge = ({ route }) => {
     const { userId } = route.params;
     const [fridgeItems, setFridgeItems] = useState([]);
     const [loading, setLoading] = useState(true);
+    const isFocused = useIsFocused();
 
     const fetchFridgeItems = async () => {
         try {
@@ -47,8 +49,10 @@ const Fridge = ({ route }) => {
     };
 
     useEffect(() => {
-        fetchFridgeItems();
-    }, [userId]);
+        if (isFocused) {
+            fetchFridgeItems();
+        }
+    }, [userId, isFocused]);
 
     const renderItem = ({ item }) => (
         <FridgeItem item={item} userId={userId} onDelete={(itemId) => {

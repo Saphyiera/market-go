@@ -363,6 +363,7 @@ app.get('/item', (req, res) => {
         if (err || results.length === 0) {
             return res.json({ status: 404, message: "Not found item" });
         }
+        console.log(results);
         res.json({ status: 200, data: formatItem(results) });
     });
 });
@@ -463,6 +464,31 @@ app.delete('/fridge/item', (req, res) => {
     );
 });
 
+app.post('/fridge/item', (req, res) => {
+    const { itemId, userId, expireDate, amount } = req.body;
+    console.log(req.body);
+
+    const query = `
+        INSERT INTO fridge (ItemID, UserID, ExpireDate, Amount)
+        VALUES (?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE 
+            Amount = VALUES(Amount)
+    `;
+
+    connection.query(query, [itemId, userId, expireDate, amount], (err, result) => {
+        if (err) {
+            console.error(err);
+            res.json({ status: 500, message: "Server error" });
+        } else {
+            if (result.affectedRows > 0) {
+                res.json({ status: 200, message: "Row inserted or updated successfully" });
+            } else {
+                res.json({ status: 404, message: "Row not found and not inserted" });
+            }
+        }
+    });
+});
+
 app.post('/recipe', upload.single('recipeImg'), (req, res) => {
     const { userId, recipeName, instructions } = req.body;
     const recipeImg = req.file ? req.file.buffer : null;
@@ -470,7 +496,7 @@ app.post('/recipe', upload.single('recipeImg'), (req, res) => {
     connection.query('SELECT MAX(RecipeID) AS maxId FROM recipe', (err, result) => {
         if (err) {
             console.error('Error retrieving max RecipeID:', err);
-            return res.status(500).send('Error retrieving recipe ID');
+            return res.sendStatus(500).send('Error retrieving recipe ID');
         }
 
         const maxId = result[0].maxId;
@@ -483,11 +509,83 @@ app.post('/recipe', upload.single('recipeImg'), (req, res) => {
         connection.query(insertQuery, [newRecipeId, userId, recipeImg, recipeName, instructions], (err) => {
             if (err) {
                 console.error('Error adding recipe:', err);
-                return res.status(500).send('Error adding recipe');
+                return res.json({ status: 500, message: "Something went wrong" });
             }
-            res.status(200).send('Recipe added successfully');
+            res.json({ status: 200, recipeId: newRecipeId });
         });
     });
+});
+
+app.post('/recipe/update', upload.single('img'), (req, res) => {
+    const { recipeId, instructions, name } = req.body;
+    const updates = [];
+    const values = [];
+
+    if (req.file) {
+        updates.push("RecipeImg = ?");
+        values.push(req.file.buffer);
+    }
+    if (instructions) {
+        updates.push("Instructions = ?");
+        values.push(instructions);
+    }
+    if (name) {
+        updates.push("RecipeName = ?");
+        values.push(name);
+    }
+
+    if (updates.length === 0) {
+        return res.json({ status: 400, message: "No fields to update" });
+    }
+
+    values.push(recipeId);
+    console.log(values);
+    const query = `UPDATE recipe SET ${updates.join(', ')} WHERE RecipeID = ?`;
+
+    connection.query(query, values, (err) => {
+        if (err) {
+            console.error(err);
+            res.json({ status: 500, message: "Server Error" });
+        } else {
+            res.json({ status: 200, message: "Update successful" });
+        }
+    });
+});
+
+app.post('/recipe/ingredients', (req, res) => {
+    const { recipeId, ingredients } = req.body;
+    console.log(req.body);
+    const values = ingredients.map((i) => [recipeId, i[0], i[1]]);
+    console.log(values);
+
+    connection.query(`
+        INSERT INTO recipeingredients(RecipeID,ItemID,Amount)
+        VALUES ? 
+        ON DUPLICATE KEY UPDATE Amount = VALUES(Amount)`, [values], (err, result) => {
+        if (err) {
+            console.error(err);
+            res.json({ status: 500, message: err });
+        } else {
+            console.log(result);
+            res.json({ status: 200, data: result });
+        }
+    });
+});
+
+
+app.delete('/recipe/ingredient', (req, res) => {
+    const { recipeId, itemId } = req.body;
+
+    connection.query(`
+        DELETE FROM recipeingredient WHERE RecipeID = ? AND ItemID = ?
+        `, [recipeId, itemId], (err) => {
+        if (err) {
+            console.error(err);
+            res.json({ status: 500, message: "Server Error!" });
+        } else {
+            res.json({ status: 200, message: "OK" });
+        }
+    })
 });
 
 app.get('/recipe/all', (req, res) => {
@@ -501,7 +599,7 @@ app.get('/recipe/all', (req, res) => {
         (err, result) => {
             if (err) {
                 console.log(err);
-                res.status(500).json({ status: 500, message: "Server Error" });
+                res.json({ status: 500, message: "Server Error" });
             } else {
                 res.json({ status: 200, data: formatRecipes(result) });
             }
@@ -514,22 +612,22 @@ app.get('/recipe', (req, res) => {
 
     connection.query(
         `SELECT 
-            r.Instructions, 
-            r.RecipeImg, 
-            r.RecipeName, 
-            u.Username,
-            JSON_ARRAYAGG(JSON_OBJECT(
-                'ItemID', i.ItemID, 
-                'ItemName', i.ItemName, 
-                'ItemImg', i.ItemImg, 
-                'Amount', ri.Amount
+        r.Instructions, 
+        r.RecipeImg, 
+        r.RecipeName, 
+        u.Username,
+        JSON_ARRAYAGG(JSON_OBJECT(
+            'ItemID', i.ItemID, 
+            'ItemName', i.ItemName, 
+            'ItemImg', i.ItemImg, 
+            'Amount', ri.Amount
             )) AS Ingredients
-        FROM recipe r
-        INNER JOIN recipeingredients ri ON r.RecipeID = ri.RecipeID
-        INNER JOIN item i ON i.ItemID = ri.ItemID
-        INNER JOIN user u ON u.UserID = r.UserID
-        WHERE r.RecipeID = ?
-        GROUP BY r.RecipeID`,
+            FROM recipe r
+            INNER JOIN recipeingredients ri ON r.RecipeID = ri.RecipeID
+            INNER JOIN item i ON i.ItemID = ri.ItemID
+            INNER JOIN user u ON u.UserID = r.UserID
+            WHERE r.RecipeID = ?
+            GROUP BY r.RecipeID`,
         [recipeId],
         (err, result) => {
             if (err) {
@@ -544,6 +642,101 @@ app.get('/recipe', (req, res) => {
     );
 });
 
+app.get('/v2/recipe', (req, res) => {
+    const recipeId = req.query.RecipeID;
+
+    connection.query(
+        `SELECT 
+            r.RecipeID,
+            r.RecipeName, 
+            r.RecipeImg, 
+            r.Instructions, 
+            u.Username
+        FROM recipe r
+        INNER JOIN user u ON u.UserID = r.UserID
+        WHERE r.RecipeID = ?`,
+        [recipeId],
+        (err, result) => {
+            if (err) {
+                console.log(err);
+                return res.json({ status: 500, message: "Server Error" });
+            } else if (result.length === 0) {
+                return res.json({ status: 404, message: "Recipe not found" });
+            } else {
+                console.log(result[0]);
+                const recipe = {
+                    ...result[0],
+                    RecipeImg: result[0].RecipeImg ? result[0].RecipeImg.toString('base64') : null
+                }
+
+                connection.query(
+                    `SELECT 
+                        i.ItemID, 
+                        i.ItemName, 
+                        i.ItemImg, 
+                        ri.Amount
+                    FROM recipeingredients ri
+                    INNER JOIN item i ON i.ItemID = ri.ItemID
+                    WHERE ri.RecipeID = ?`,
+                    [recipeId],
+                    (err, ingredientsResult) => {
+                        if (err) {
+                            console.log(err);
+                            return res.json({ status: 500, message: "Server Error" });
+                        }
+                        console.log("AAAA", ingredientsResult);
+
+                        const formattedRecipe = {
+                            ...recipe,
+                            Ingredients: ingredientsResult.map((item) => {
+                                return {
+                                    ...item,
+                                    ItemImg: item.ItemImg ? item.ItemImg.toString('base64') : null
+                                }
+                            })
+                        };
+
+                        res.json({ status: 200, data: formattedRecipe });
+                    }
+                );
+            }
+        }
+    );
+});
+
+
+app.delete('/recipe', (req, res) => {
+    const { recipeId } = req.query;
+
+    connection.query(`DELETE FROM recipe WHERE RecipeID = ?`, [recipeId], (err, result) => {
+        if (err) {
+            console.log(err);
+            res.json({ status: 500, message: err });
+        } else {
+            res.json({ status: 200 });
+        }
+    })
+});
+
+app.get('/recipe/owner', (req, res) => {
+    const userId = req.query.userId;
+    const page = parseInt(req.query.page) || 1;
+    const itemsPerPage = 10;
+    const offset = (page - 1) * itemsPerPage;
+
+    console.log(req.query);
+
+    connection.query(`SELECT * FROM recipe WHERE UserID = ? LIMIT ? OFFSET ?`, [userId, itemsPerPage, offset], (err, result) => {
+        if (err) {
+            console.log(err);
+            res.json({ status: 500, message: "Server Error" });
+        } else {
+            console.log(result);
+            res.json({ status: 200, data: result });
+        }
+    })
+})
+
 app.get('/dish-plan', (req, res) => {
     const userId = req.query.userId;
     const month = req.query.month;
@@ -555,7 +748,7 @@ app.get('/dish-plan', (req, res) => {
         WHERE dishplan.UserID = ? AND MONTH(DateToDo) = ? AND YEAR(DateToDo) = ?
         GROUP BY DateToDo
         ORDER BY DateToDo
-    `;
+        `;
 
     connection.query(query, [userId, month, year], (err, result) => {
         if (err) {
@@ -634,7 +827,10 @@ app.get('/group/details', (req, res) => {
             g.GroupID, g.AdminID, g.GroupName, 
             IFNULL(TO_BASE64(g.GroupImg), '') AS GroupImg,
             GROUP_CONCAT(gm.MemberID) AS MemberIDs,
-            GROUP_CONCAT(u.Username) AS Usernames
+            GROUP_CONCAT(u.Username) AS Usernames,
+            JSON_ARRAYAGG(JSON_OBJECT(
+                'Avatar', u.Avatar
+            )) AS MemberAvatars
         FROM \`group\` g
         INNER JOIN groupmember gm ON g.GroupID = gm.GroupID
         INNER JOIN \`user\` u ON u.UserID = gm.MemberID
@@ -661,16 +857,17 @@ app.get('/group/details', (req, res) => {
 
             const memberIds = result[0].MemberIDs ? result[0].MemberIDs.split(',') : [];
             const usernames = result[0].Usernames ? result[0].Usernames.split(',') : [];
+            const memberAvatars = result[0].MemberAvatars;
 
             if (memberIds.length === usernames.length) {
                 for (let i = 0; i < memberIds.length; i++) {
                     groupDetails.Members.push({
                         MemberID: memberIds[i],
                         Username: usernames[i],
+                        MemberAvatar: memberAvatars[i]?.Avatar || null
                     });
                 }
             }
-            console.log(groupDetails)
             res.json({ status: 200, data: groupDetails });
         }
     );

@@ -780,6 +780,75 @@ app.get('/dish-plan/date', (req, res) => {
     })
 })
 
+app.post('/dish-plan', (req, res) => {
+    const { userId, dateToDo, recipeId } = req.body;
+    const values = recipeId.map((i) => [userId, dateToDo, i]);
+    connection.query(`INSERT INTO dishplan(UserID, RecipeID, DateToDo) VALUES ?`, values, (err, result) => {
+        if (err) {
+            console.error(err);
+            res.json({ status: 500, message: "Server error" });
+        } else {
+            res.json({ status: 200, message: result });
+        }
+    })
+})
+
+app.delete('/dish-plan', (req, res) => {
+    const { userId, dateToDo } = req.body;
+
+    connection.query('DELETE FROM dishplan WHERE UserID = ? AND DateToDo = ?', [userId, dateToDo], (err, result) => {
+        if (err) {
+            console.error(err);
+            res.json({ status: 500, message: "Server Error" });
+        } else {
+            res.json({ status: 200, message: result });
+        }
+    })
+})
+
+app.delete('/dish-plan/recipe', (req, res) => {
+    const { userId, dateToDo, recipeId } = req.body;
+
+    connection.query('DELETE FROM dishplan WHERE UserID = ? AND DateToDo = ? AND RecipeID IN (?)', [userId, dateToDo, recipeId], (err, result) => {
+        if (err) {
+            console.error(err);
+            res.json({ status: 500, message: "Server Error" });
+        } else {
+            res.json({ status: 200, message: result });
+        }
+    })
+})
+
+app.post('/group-list/buyer', (req, res) => {
+    const { groupId, listId, buyerId } = req.body;
+    const values = buyerId.map((i) => {
+        groupId, listId, i
+    })
+
+    connection.query('INSERT INTO grouplist(GroupID, ListID, BuyerID) VALUES ? ON DUPLICATE KEY UPDATE BuyerID = BuyerID',
+        values, (err, result) => {
+            if (err) {
+                console.error(err);
+                res.json({ status: 500, message: "Server Error" });
+            } else {
+                res.json({ status: 200, message: result });
+            }
+        })
+})
+
+app.delete('/group-list/buyer', (req, res) => {
+    const { groupId, listId, buyerId } = req.body;
+
+    connection.query(`DELETE FROM grouplist WHERE GroupID = ? AND ListID = ? AND BuyerID IN (?)`, [groupId, listId, buyerId], (err, result) => {
+        if (err) {
+            console.error(err);
+            res.json({ status: 500, message: "Server Error" });
+        } else {
+            res.json({ status: 200, message: result });
+        }
+    })
+})
+
 app.get('/group/user', (req, res) => {
     const userId = req.query.userId;
     connection.query(
@@ -909,3 +978,19 @@ app.get('/group/plans', (req, res) => {
     );
 });
 
+app.get('/statistic', (req, res) => {
+    const { userId, startDate, endDate } = req.query;
+    connection.query(`
+        SELECT dl.DateToBuy, dl.Cost, li.ListID, li.ItemID, li.Amount, i.ItemName
+        FROM dailylist dl INNER JOIN listitem li ON dl.ListID = li.ListID INNER JOIN item i ON li.ItemID = i.ItemID
+        WHERE dl.UserID = ? AND dl.DateToBuy BETWEEN ? AND ?
+        ORDER BY dl.DateToBuy
+        `, [userId, startDate, endDate], (err, result) => {
+        if (err) {
+            console.error(err);
+            res.json({ status: 500, message: "Server Error" });
+        } else {
+            res.json({ status: 200, data: result });
+        }
+    })
+})

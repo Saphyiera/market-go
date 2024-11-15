@@ -10,7 +10,7 @@ const upload = multer({ storage: storage });
 const connection = mysql.createConnection({
     host: 'localhost',
     user: 'root',
-    password: 'ROOT',
+    password: '123456',
     database: 'market'
 })
 
@@ -28,6 +28,7 @@ app.use(cors())
 app.listen(port = 2811, () => {
     console.log(`Server is listening on http:/localhost:${port}`)
 })
+
 
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
@@ -239,37 +240,51 @@ app.post('/daily-list', (req, res) => {
     const { listItems, dateToBuy, userId, cost } = req.body;
     let listId;
 
+    // Kiểm tra dữ liệu đã nhận
+    console.log('Received data:', req.body);
+
+    // Lấy max ListID từ database
     connection.query('SELECT MAX(ListID) AS maxListID FROM dailylist', (err, result) => {
         if (err) {
+            console.error('Error fetching max ListID:', err);  // In lỗi chi tiết
             return res.status(500).send('Error fetching max ListID');
         }
 
         listId = (result[0].maxListID || 0) + 1;
 
+        // Insert dữ liệu vào bảng dailylist
         connection.query(
             'INSERT INTO dailylist (ListID, UserID, DateToBuy, Cost) VALUES (?, ?, ?, ?)',
             [listId, userId, dateToBuy, cost],
             (err) => {
                 if (err) {
+                    console.error('Error inserting into dailylist:', err);  // In lỗi chi tiết
                     return res.status(500).send('Error inserting into dailylist');
                 }
 
+                // Tạo các giá trị cần chèn vào bảng listitem
                 const listItemValues = listItems.map(item => [listId, item.ItemID, item.amount]);
 
+                // In ra listItemValues để kiểm tra
+                console.log('List items to insert:', listItemValues);
+
+                // Insert các item vào bảng listitem
                 connection.query(
                     'INSERT INTO listitem (ListID, ItemID, Amount) VALUES ?',
                     [listItemValues],
                     (err) => {
                         if (err) {
+                            console.error('Error inserting into listitem:', err);  // In lỗi chi tiết
                             return res.status(500).send('Error inserting into listitem');
                         }
-                        res.status(200).send('Items added successfully');
+                        res.status(200).send({ message: 'Items added successfully' });
                     }
                 );
             }
         );
     });
 });
+
 
 app.get('/daily-list', (req, res) => {
     const { listId } = req.query;
@@ -312,6 +327,43 @@ app.get('/daily-list', (req, res) => {
         }
     );
 });
+
+app.put('/daily-list', (req, res) => { // Update plan
+    const { dateToBuy, itemName, newAmount } = req.body;
+
+    if (!dateToBuy || !itemName || !newAmount) {
+        return res.status(400).json({ status: 400, message: "dateToBuy, itemName, and newAmount are required" });
+    }
+
+    const query = `
+        UPDATE listitem li
+        INNER JOIN dailylist dl ON li.ListID = dl.ListID
+        INNER JOIN item i ON li.ItemID = i.ItemID
+        SET li.Amount = ?
+        WHERE dl.DateToBuy = ? AND i.ItemName = ?;
+    `;
+
+    connection.query(
+        query,
+        [newAmount, dateToBuy, itemName],
+        (err, result) => {
+            if (err) {
+                console.error('Error updating list item amount:', err);
+                return res.status(500).json({ status: 500, message: 'Error updating list item amount' });
+            }
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ status: 404, message: "No matching list item found" });
+            }
+
+            res.status(200).json({ status: 200, message: 'List item amount updated successfully' });
+        }
+    );
+});
+
+
+
+
 
 app.post('/item', upload.single('image'), (req, res) => {
     const { itemName, itemDescription } = req.body;
@@ -993,4 +1045,59 @@ app.get('/statistic', (req, res) => {
             res.json({ status: 200, data: result });
         }
     })
-})
+});
+
+
+
+app.post('/daily-list', (req, res) => {
+    const { listItems, dateToBuy, userId, cost } = req.body;
+    let listId;
+
+    // Kiểm tra dữ liệu đã nhận
+    console.log('Received data:', req.body);
+
+    // Lấy max ListID từ database
+    connection.query('SELECT MAX(ListID) AS maxListID FROM dailylist', (err, result) => {
+        if (err) {
+            console.error('Error fetching max ListID:', err);  // In lỗi chi tiết
+            return res.status(500).send('Error fetching max ListID');
+        }
+
+        listId = (result[0].maxListID || 0) + 1;
+
+        // Insert dữ liệu vào bảng dailylist
+        connection.query(
+            'INSERT INTO dailylist (ListID, UserID, DateToBuy, Cost) VALUES (?, ?, ?, ?)',
+            [listId, userId, dateToBuy, cost],
+            (err) => {
+                if (err) {
+                    console.error('Error inserting into dailylist:', err);  // In lỗi chi tiết
+                    return res.status(500).send('Error inserting into dailylist');
+                }
+
+                // Tạo các giá trị cần chèn vào bảng listitem
+                const listItemValues = listItems.map(item => [listId, item.ItemID, item.amount]);
+
+                // In ra listItemValues để kiểm tra
+                console.log('List items to insert:', listItemValues);
+
+                // Insert các item vào bảng listitem
+                connection.query(
+                    'INSERT INTO listitem (ListID, ItemID, Amount) VALUES ?',
+                    [listItemValues],
+                    (err) => {
+                        if (err) {
+                            console.error('Error inserting into listitem:', err);  // In lỗi chi tiết
+                            return res.status(500).send('Error inserting into listitem');
+                        }
+                        res.status(200).send({ message: 'Items added successfully' });
+                    }
+                );
+            }
+        );
+    });
+});
+
+
+
+

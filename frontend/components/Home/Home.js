@@ -1,43 +1,92 @@
+// Home.js
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, ScrollView } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import DailyList from './DailyList';
+import AddPlan from './AddPlan';  // Import AddPlan component
+
+const { SERVER_IP, PORT } = require("../../../backend/constant");
+
+DailyList.defaultProps = {
+    onUpdate: () => {f}, 
+    onDelete: () => {}, 
+};
+
 
 export default function Home() {
-    const plans = [
-        {
-            dateToBuy: '2024-11-28',
-            listItem: [
-                { itemName: 'Apple', amount: 'A bunch' },
-                { itemName: 'Banana', amount: 'A lot' },
-                { itemName: 'Orange', amount: 'A handful' },
-            ]
-        },
-        {
-            dateToBuy: '2024-11-15',
-            listItem: [
-                { itemName: 'Milk', amount: '2 Liters' },
-                { itemName: 'Eggs', amount: 'A dozen' },
-            ]
-        },
-        {
-            dateToBuy: '2024-11-04',
-            listItem: [
-                { itemName: 'Bread', amount: 'A loaf' },
-                { itemName: 'Butter', amount: '200g' },
-            ]
-        }
-    ];
+    const currentDate = new Date();
+    const currentMonth = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+    const currentYear = currentDate.getFullYear().toString();
+
+    const [plans, setPlans] = useState([]);
+    const [month, setMonth] = useState(currentMonth);
+    const [year, setYear] = useState(currentYear);
+    const [selectedDate, setSelectedDate] = useState(null);
+
+    const BASE_URL = `http://${SERVER_IP}:${PORT}`;
+
+
+    const fetchPlans = () => {
+        const userId = 0;
+
+        fetch(`${BASE_URL}/daily-list/month?userId=${userId}&month=${month}&year=${year}`)
+            .then(response => response.json())
+            .then(data => setPlans(data))
+            .catch(error => console.error("Error fetching plans:", error));
+    };
+
+    useEffect(() => {
+        fetchPlans();
+    }, [,selectedDate,month, year]);
 
     const markedDates = plans.reduce((acc, plan) => {
-        acc[plan.dateToBuy] = { selectedColor: 'turquoise', selected: 'true', marked: 'true' };
+        acc[plan.dateToBuy] = { selectedColor: 'turquoise', selected: true, marked: true };
         return acc;
     }, {});
 
-    const today = new Date().toISOString().split('T')[0];
-    markedDates[today] = {
-        selected: true,
-        selectedColor: 'blue',
-        selectedTextColor: 'white',
+    if (selectedDate) {
+        markedDates[selectedDate] = {
+            selected: true,
+            selectedColor: 'green',
+            selectedTextColor: 'white',
+        };
+    }
+
+    const handleMonthChange = (date) => {
+        const selectedMonth = date.month < 10 ? `0${date.month}` : `${date.month}`;
+        const selectedYear = `${date.year}`;
+
+        setMonth(selectedMonth);
+        setYear(selectedYear);
+    };
+
+    const handleDayPress = (day) => {
+        setSelectedDate(day.dateString);
+    };
+
+    const displayPlans = () => {
+        if (selectedDate) {
+            const dailyPlans = plans.filter(plan => plan.dateToBuy === selectedDate);
+
+            return (
+                <View style={styles.selectedDateContainer}>
+                    <Text style={styles.selectedDateText}>Selected Date: {selectedDate}</Text>
+                    {dailyPlans.length > 0 ? (
+                        <DailyList dateToBuy={selectedDate} listItem={dailyPlans[0].listItem} />
+                    ) : (
+                        <AddPlan selectedDate={selectedDate} fetchPlans={fetchPlans} BASE_URL={BASE_URL} />
+                    )}
+                </View>
+            );
+        } else {
+            return (
+                <View style={styles.listContainer}>
+                    {plans.map((plan, index) => (
+                        <DailyList key={index} dateToBuy={plan.dateToBuy} listItem={plan.listItem} />
+                    ))}
+                </View>
+            );
+        }
     };
 
     return (
@@ -45,7 +94,8 @@ export default function Home() {
             <View style={styles.calendarContainer}>
                 <Calendar
                     enableSwipeMonths={true}
-                    onDayPress={(day) => console.log(day)}
+                    onDayPress={handleDayPress}
+                    onMonthChange={handleMonthChange}
                     markedDates={markedDates}
                     theme={{
                         arrowColor: '#4a90e2',
@@ -58,11 +108,7 @@ export default function Home() {
                     }}
                 />
             </View>
-            <View style={styles.listContainer}>
-                {plans.map((plan, index) => (
-                    <DailyList key={index} dateToBuy={plan.dateToBuy} listItem={plan.listItem} />
-                ))}
-            </View>
+            {displayPlans()}
         </ScrollView>
     );
 }
@@ -82,8 +128,23 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         elevation: 5,
     },
+    selectedDateContainer: {
+        padding: 10,
+        backgroundColor: 'white',
+        marginTop: 20,
+        marginHorizontal: 10,
+        borderRadius: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    selectedDateText: {
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
     listContainer: {
         marginTop: 10,
-        marginHorizontal: 10,
     },
 });

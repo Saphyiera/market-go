@@ -5,15 +5,16 @@ export default function DeletePlan({ dateToBuy, item, onDelete }) {
     const handleDelete = () => {
         const { itemName } = item;
 
-        fetch(`http://192.168.1.29:2811/list-item`, {
+        // Gửi yêu cầu DELETE để xóa
+        fetch(`http://192.168.1.2:2811/list-item`, {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ dateToBuy, itemName }),
         })
             .then((response) => response.json())
             .then((data) => {
-                alert(data.message);
-                onDelete(itemName); 
+                alert(data.message); // Thông báo thành công
+                onDelete(itemName); // Cập nhật danh sách
             })
             .catch((error) => {
                 console.error('Error deleting item:', error);

@@ -2,21 +2,22 @@ import React, { useState } from 'react';
 import { TextInput, TouchableOpacity, Text, StyleSheet, View } from 'react-native';
 
 export default function UpdatePlan({ dateToBuy, item, onUpdate, toggleEdit }) {
-    const [updatedAmount, setUpdatedAmount] = useState(item.amount); 
+    const [updatedAmount, setUpdatedAmount] = useState(item.amount); // Khởi tạo giá trị ban đầu
 
     const handleUpdate = () => {
         const { itemName } = item;
 
-        fetch(`http://192.168.1.29:2811/daily-list`, {
+        // Gửi yêu cầu PUT để cập nhật
+        fetch(`http://192.168.1.2:2811/daily-list`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ dateToBuy, itemName, newAmount: updatedAmount }),
         })
             .then((response) => response.json())
             .then((data) => {
-                alert(data.message); 
-                onUpdate(itemName, { amount: updatedAmount }); 
-                toggleEdit();
+                alert(data.message); // Thông báo thành công
+                onUpdate(itemName, { amount: updatedAmount }); // Cập nhật danh sách
+                toggleEdit(); // Tắt chế độ chỉnh sửa
             })
             .catch((error) => {
                 console.error('Error updating item:', error);

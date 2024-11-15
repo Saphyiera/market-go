@@ -22,8 +22,8 @@ export default function DailyList({ dateToBuy, listItem, onUpdate, onDelete }) {
                                 dateToBuy={dateToBuy}
                                 item={item}
                                 onUpdate={(itemName, updatedFields) => {
-                                    onUpdate(index, updatedFields); 
-                                    toggleEdit(index); 
+                                    onUpdate(index, updatedFields); // Gọi onUpdate từ props
+                                    toggleEdit(index); // Đóng chế độ chỉnh sửa
                                 }}
                                 toggleEdit={() => toggleEdit(index)}
                             />

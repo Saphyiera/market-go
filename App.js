@@ -18,7 +18,6 @@ import DishRecipe from './frontend/components/Dish/DishRecipe';
 import Items from './frontend/components/Item/Items';
 import Account from './frontend/components/Account/Account';
 import Login from './frontend/components/Account/Login';
-import Avatars from './frontend/components/Account/Avatars';
 import Signup from './frontend/components/Account/Signup';
 import UpdateProfile from './frontend/components/Account/UpdateProfile';
 import Groups from './frontend/components/Group/Groups';
@@ -33,6 +32,9 @@ import AddRecipe from './frontend/components/Dish/AddRecipe';
 import AddIngredient from './frontend/components/Dish/AddIngredient';
 import MyRecipes from './frontend/components/Dish/MyRecipes';
 import MyRecipe from './frontend/components/Dish/MyRecipe';
+import AccountSearch from './frontend/components/Account/AccountSearch';
+import RecipeSearch from './frontend/components/Dish/RecipeSearch';
+import CreateGroup from './frontend/components/Group/CreateGroup';
 const Drawer = createDrawerNavigator();
 const Stack = createNativeStackNavigator();
 
@@ -45,6 +47,7 @@ const RecipeStack = () => (
     <Stack.Screen name='Add Ingredient' component={AddIngredient} />
     <Stack.Screen name='My Recipes' component={MyRecipes} />
     <Stack.Screen name='My Recipe' component={MyRecipe} />
+    <Stack.Screen name='Search Recipe' component={RecipeSearch} />
   </Stack.Navigator>
 );
 
@@ -131,24 +134,28 @@ const GroupStack = () => {
   }
 
   return (
-    <Stack.Navigator initialRouteName={isAuthenticated ? 'Groups' : 'Group No Auth'}>
-      <Stack.Screen name='Groups' component={Groups} options={{ headerShown: false }} />
-      <Stack.Screen name='Group No Auth' component={NotAuth} options={{ headerShown: false }} />
-      <Stack.Screen name='Group' component={Group} />
-      <Stack.Screen name='Member' component={Member} />
-      <Stack.Screen name='Group Plans' component={GroupPlans} />
-      <Stack.Screen name='Plan' component={Plan} />
-      <Stack.Screen name='Plan Item' component={Item} options={{ title: "Item" }} />
+    <Stack.Navigator>
+      {isAuthenticated ? (
+        <>
+          <Stack.Screen name="Groups" component={Groups} options={{ headerShown: false }} />
+          <Stack.Screen name="Group" component={Group} />
+          <Stack.Screen name="Member" component={Member} />
+          <Stack.Screen name="Group Plans" component={GroupPlans} />
+          <Stack.Screen name="Plan" component={Plan} />
+          <Stack.Screen name="Plan Item" component={Item} options={{ title: "Item" }} />
+          <Stack.Screen name='Create Group' component={CreateGroup} />
+        </>
+      ) : (
+        <Stack.Screen name="Group No Auth" component={NotAuth} options={{ headerShown: false }} />
+      )}
     </Stack.Navigator>
   );
-}
-
+};
 
 const AppNavigator = () => {
   return (
     <Drawer.Navigator initialRouteName='Home'>
       <Drawer.Screen name='Profile' component={AccountStack} />
-      <Drawer.Screen name='Avatars' component={Avatars} />
       <Drawer.Screen name='Home' component={Home} />
       <Drawer.Screen name='Groups Screen' component={GroupStack} options={{ title: 'Groups' }} />
       <Drawer.Screen name='Items' component={ItemStack} />
@@ -157,6 +164,7 @@ const AppNavigator = () => {
       <Drawer.Screen name='Dish' component={DishStack} />
       <Drawer.Screen name='Search' component={Search} />
       <Drawer.Screen name='Statistic' component={Statistic} />
+      <Drawer.Screen name='Account Search' component={AccountSearch} />
     </Drawer.Navigator>
   );
 };

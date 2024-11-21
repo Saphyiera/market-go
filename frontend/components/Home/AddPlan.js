@@ -24,44 +24,44 @@ export default function AddPlan({ selectedDate, fetchPlans, onAdd }) {
     };
 
     const handleAddPlan = () => {
-    if (!selectedDate || listItems.length === 0) {
-        Alert.alert('Validation Error', 'Please select a date and add at least one item.');
-        return;
-    }
-
-    // Dữ liệu cần gửi
-    const newPlanData = {
-        listItems,
-        dateToBuy: selectedDate,
-        userId: 0, 
-        cost: 100,
-    };
-
-    // Gửi yêu cầu POST mà không cần await
-    fetch('http://192.168.1.29:2811/daily-list', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newPlanData),
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.message === 'Items added successfully') {
-            Alert.alert('Success', 'Plan added successfully!');
-            fetchPlans(); // Làm mới danh sách kế hoạch
-            setListItems([]); // Reset danh sách item
-        } else {
-            Alert.alert('Error', data.message || 'Error adding plan.');
+        if (!selectedDate || listItems.length === 0) {
+            Alert.alert('Validation Error', 'Please select a date and add at least one item.');
+            return;
         }
-    })
-    .catch(error => {
-        console.error('ok:', error);
-        Alert.alert('ok', 'ok');
-        setListItems([]); // Reset danh sách khi có lỗi
-    });
-    
-};
+
+        // Dữ liệu cần gửi
+        const newPlanData = {
+            listItems,
+            dateToBuy: selectedDate,
+            userId: 0,
+            cost: 100,
+        };
+
+        // Gửi yêu cầu POST mà không cần await
+        fetch('http://192.168.1.9:2811/daily-list', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(newPlanData),
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message === 'Items added successfully') {
+                    Alert.alert('Success', 'Plan added successfully!');
+                    fetchPlans(); // Làm mới danh sách kế hoạch
+                    setListItems([]); // Reset danh sách item
+                } else {
+                    Alert.alert('Error', data.message || 'Error adding plan.');
+                }
+            })
+            .catch(error => {
+                console.error('ok:', error);
+                Alert.alert('ok', 'ok');
+                setListItems([]); // Reset danh sách khi có lỗi
+            });
+
+    };
 
 
     return (

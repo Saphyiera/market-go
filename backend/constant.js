@@ -1,4 +1,5 @@
-const SERVER_IP = "192.168.1.29";
+const SERVER_IP = "192.168.1.10";
 const PORT = "2811";
+const PASSWORD = 'ROOT';
 
-module.exports = { SERVER_IP, PORT }
+module.exports = { SERVER_IP, PORT, PASSWORD }

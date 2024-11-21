@@ -2,20 +2,20 @@ import React, { useState } from 'react';
 import { TextInput, TouchableOpacity, Text, StyleSheet, View } from 'react-native';
 
 export default function UpdatePlan({ dateToBuy, item, onUpdate, toggleEdit }) {
-    const [updatedAmount, setUpdatedAmount] = useState(item.amount); 
+    const [updatedAmount, setUpdatedAmount] = useState(item.amount);
 
     const handleUpdate = () => {
         const { itemName } = item;
 
-        fetch(`http://192.168.1.29:2811/daily-list`, {
+        fetch(`http://192.168.1.9:2811/daily-list`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ dateToBuy, itemName, newAmount: updatedAmount }),
         })
             .then((response) => response.json())
             .then((data) => {
-                alert(data.message); 
-                onUpdate(itemName, { amount: updatedAmount }); 
+                alert(data.message);
+                onUpdate(itemName, { amount: updatedAmount });
                 toggleEdit();
             })
             .catch((error) => {

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, Image, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, Image, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { useIsFocused, useNavigation } from '@react-navigation/native';
-import { SERVER_IP } from '../../../backend/constant';
+import { PORT, SERVER_IP } from '../../../backend/constant';
 import UpdateRecipe from './UpdateRecipe';
 
 export default function MyRecipe({ route }) {
@@ -13,11 +13,13 @@ export default function MyRecipe({ route }) {
     const [recipe, setRecipe] = useState(null);
     const [loading, setLoading] = useState(true);
     const [showUpdateSegment, setShowUpdateSegment] = useState(false);
+    const [removedIngredients, setRemovedIngredients] = useState([]);
 
     useEffect(() => {
         if (isFocused) {
             console.log(ownerId, recipeId);
             fetchRecipe();
+            setRemovedIngredients([]);
         }
     }, [isFocused]);
 
@@ -40,6 +42,51 @@ export default function MyRecipe({ route }) {
             setLoading(false);
         }
     };
+
+    const handleRemoveIngredient = (item) => {
+        console.log(item.ItemID, recipeId);
+        setRecipe((prev) => ({
+            ...prev,
+            Ingredients: prev.Ingredients.filter((i) => i.ItemID !== item.ItemID),
+        }));
+        setRemovedIngredients(prev => [...prev, item]);
+    }
+
+    const handleUndoIngredient = (item) => {
+        setRemovedIngredients(prev => prev.filter(i => i.ItemID !== item.ItemID));
+        setRecipe(prev => ({
+            ...prev,
+            Ingredients: [...prev.Ingredients, item]
+        }))
+    }
+
+    const handleRemoveSubmit = async () => {
+        try {
+            const response = await fetch(`http://${SERVER_IP}:${PORT}/recipe/ingredients`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    recipeId,
+                    itemId: removedIngredients.map(i => i.ItemID)
+                }),
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                console.log('Success:', result);
+                Alert.alert("Success", "Ingredients remove succussfully!")
+                setRemovedIngredients([]);
+            } else {
+                console.error('Error:', result);
+                Alert.alert("Fail", "Something went wrong!")
+            }
+        } catch (error) {
+            console.error('Request failed', error);
+            Alert.alert("Error", "Server Error!")
+        }
+    }
 
     if (loading) {
         return <ActivityIndicator size="large" color="#00bfff" style={styles.loader} />;
@@ -71,12 +118,7 @@ export default function MyRecipe({ route }) {
                             <View key={item.ItemID} style={styles.ingredientContainer}>
                                 <TouchableOpacity
                                     style={styles.removeButton}
-                                    onPress={() => {
-                                        setRecipe((prev) => ({
-                                            ...prev,
-                                            Ingredients: prev.Ingredients.filter((i) => i.ItemID !== item.ItemID),
-                                        }));
-                                    }}
+                                    onPress={() => handleRemoveIngredient(item)}
                                 >
                                     <Text style={styles.removeButtonText}>Remove</Text>
                                 </TouchableOpacity>
@@ -107,6 +149,47 @@ export default function MyRecipe({ route }) {
             <TouchableOpacity onPress={() => navigation.navigate('Add Ingredient', { recipeId })} style={styles.addIngredientButton} >
                 <Text style={styles.addIngredientText}>Add an ingredient</Text>
             </TouchableOpacity>
+            {
+                removedIngredients.length !== 0
+                    ? <View style={styles.ingredientsListContainer}>
+                        {removedIngredients.map((item) => (
+                            <View key={item.ItemID + "-" + item.ItemID} style={styles.ingredientContainer}>
+                                <TouchableOpacity
+                                    style={styles.undoButton}
+                                    onPress={() => handleUndoIngredient(item)}
+                                >
+                                    <Text style={styles.removeButtonText}>Undo</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        navigation.navigate('Ingredient', { itemId: item.ItemID });
+                                    }}
+                                >
+                                    <View style={styles.ingredientRow}>
+                                        {item.ItemImg ? (
+                                            <Image
+                                                source={{ uri: `data:image/png;base64,${item.ItemImg}` }}
+                                                style={styles.ingredientImage}
+                                            />
+                                        ) : (
+                                            <Text style={styles.noImageText}>No image</Text>
+                                        )}
+                                        <Text style={styles.ingredientName}>{item.ItemName}</Text>
+                                    </View>
+                                    <Text style={styles.ingredientAmount}>Amount: {item.Amount}</Text>
+                                </TouchableOpacity>
+                            </View>
+                        ))}
+                    </View>
+                    : <Text style={styles.noIngredientText}>You haven't remove any ingredients from this dish!</Text>
+            }
+            {
+                removedIngredients.length !== 0 &&
+                <TouchableOpacity onPress={handleRemoveSubmit} style={styles.addIngredientButton} >
+                    <Text style={styles.addIngredientText}>Remove all selected ingredients</Text>
+                </TouchableOpacity>
+            }
             <Text style={styles.sectionTitle}>Instructions:</Text>
             <Text style={styles.instructionsText}>{recipe.Instructions}</Text>
             <TouchableOpacity onPress={() => {
@@ -129,7 +212,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontStyle: 'italic',
         color: 'gray',
-        padding: 5
+        padding: 5,
     },
     addIngredientButton: {
         padding: 15,
@@ -239,6 +322,16 @@ const styles = StyleSheet.create({
         top: 8,
         right: 8,
         backgroundColor: '#ff4444',
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+        borderRadius: 5,
+        zIndex: 1, // Ensures the button is clickable above other elements
+    },
+    undoButton: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        backgroundColor: '#5000f0',
         paddingVertical: 4,
         paddingHorizontal: 8,
         borderRadius: 5,

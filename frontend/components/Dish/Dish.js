@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Alert, FlatList, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Alert, FlatList, Image, TouchableOpacity, Button } from 'react-native';
 import { Calendar } from 'react-native-calendars';
-import { useNavigation } from '@react-navigation/native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const { SERVER_IP } = require('../../../backend/constant');
+const { SERVER_IP, PORT } = require('../../../backend/constant');
 
 export default function Dish() {
     const navigation = useNavigation();
-    const userId = 0;
+    const [userId, setUserId] = useState(null);
     const currentDate = new Date().toISOString().split('T')[0];
+    const isFocused = useIsFocused();
 
     const [markedDates, setMarkedDates] = useState({});
     const [selectedMonth, setSelectedMonth] = useState(currentDate.slice(0, 7));
@@ -17,8 +19,23 @@ export default function Dish() {
     const [selectedDate, setSelectedDate] = useState(currentDate);
 
     useEffect(() => {
-        fetchDishPlanData(selectedMonth);
-    }, [selectedMonth]);
+        if (isFocused) {
+            console.log(userId + "??")
+            fetchUserId();
+            fetchDishPlanData(selectedMonth);
+        }
+    }, [selectedMonth, isFocused]);
+
+    const fetchUserId = async () => {
+        try {
+            const storedUserId = await AsyncStorage.getItem('userID');
+            if (storedUserId) {
+                setUserId(storedUserId); // Set userId state if found
+            }
+        } catch (error) {
+            console.error('Error fetching userId from AsyncStorage:', error);
+        }
+    };
 
     const fetchDishPlanData = async (month) => {
         const [year, monthNumber] = month.split('-');
@@ -74,6 +91,46 @@ export default function Dish() {
         fetchDayPlan(selectedDate);
     };
 
+    const handleRemove = (recipeId) => {
+        console.log(recipeId)
+        Alert.alert("Confirm remove", "You want to remove this recipe?",
+            [
+                {
+                    text: "Yes",
+                    onPress: () => {
+                        console.log(selectedDate, userId, recipeId);
+                        removeDish(recipeId);
+                    }
+                }, {
+                    text: "No",
+                    onPress: console.log("?")
+                }])
+    }
+
+    const removeDish = async (recipeId) => {
+        const response = await fetch(`http://${SERVER_IP}:${PORT}/dish-plan/recipe`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                userId, recipeId, dateToDo: selectedDate
+            })
+        })
+        const result = await response.json();
+        if (result.status === 200) {
+            setDayPlans(dayPlans.filter(i => i.RecipeID !== recipeId))
+            Alert.alert("Success", "Recipe remove successfully")
+        }
+        else {
+            Alert.alert("Fail", result.message)
+        }
+    }
+
+    if (userId === null) {
+        return <Text>Login to see your dish plan!</Text>
+    }
+
     return (
         <View style={styles.container}>
             <Calendar
@@ -98,20 +155,25 @@ export default function Dish() {
                     <FlatList
                         data={dayPlans}
                         keyExtractor={(item) => item.RecipeID.toString()}
-                        renderItem={({ item }) => (
+                        renderItem={({ item }) => (<>
                             <TouchableOpacity
                                 key={item.RecipeID}
                                 style={styles.recipeContainer}
                                 onPress={() => {
                                     navigation.navigate('Dish Recipe', { recipeId: item.RecipeID })
                                 }}>
-                                <View style={styles.planItem}>
+                                <View style={styles.recipe}>
+
                                     {item.RecipeImg
                                         ? <Image source={{ uri: `data:image/png;base64,${item.RecipeImg}` }} style={styles.recipeImage} />
                                         : <Text style={styles.noRecipeImg}>No image</Text>}
                                     <Text style={styles.planText}>{item.RecipeName}</Text>
                                 </View>
+                                <TouchableOpacity onPress={() => handleRemove(item.RecipeID)} style={styles.removeButton}>
+                                    <Text style={styles.removeButtonText}>Remove</Text>
+                                </TouchableOpacity>
                             </TouchableOpacity>
+                        </>
                         )}
                     />
                 </View>
@@ -127,6 +189,19 @@ const styles = StyleSheet.create({
         flex: 1,
         padding: 20,
         backgroundColor: '#F4F6F9',
+    },
+    recipeContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        backgroundColor: '#ffffff',
+        padding: 10,
+        borderRadius: 8,
+        marginBottom: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        elevation: 3,
     },
     noPlansText: {
         fontSize: 16,
@@ -144,18 +219,10 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         textAlign: 'center',
     },
-    planItem: {
+    recipe: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 10,
-        borderRadius: 8,
-        backgroundColor: '#ffffff',
-        marginBottom: 10,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 3,
+
     },
     planText: {
         fontSize: 16,
@@ -177,9 +244,16 @@ const styles = StyleSheet.create({
         marginRight: 2,
         paddingTop: 15
     },
-    recipeContainer: {
-        borderBottomColor: '#ddd',
-        borderBottomWidth: 1,
-        paddingVertical: 8,
+    removeButtonText: {
+        fontSize: 12,
+        color: 'white',
+        fontWeight: '500'
+    },
+    removeButton: {
+        backgroundColor: 'cornflowerblue',
+        width: 60,
+        height: 20,
+        borderRadius: 5,
+        alignItems: 'center'
     }
 });

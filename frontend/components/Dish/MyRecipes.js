@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { TouchableOpacity } from 'react-native';
+import { Alert, TouchableOpacity } from 'react-native';
 import { View, Text, FlatList, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import { useIsFocused, useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -42,6 +42,33 @@ const MyRecipes = () => {
         }
     };
 
+    const handleRemoveRecipe = (item) => {
+        console.log(item.RecipeID);
+        Alert.alert("Confirm", `Do you want to delete your recipe: ${item.RecipeName}. All information about this recipe: instruction, ingredients,... will be delete!`, [
+            {
+                text: "Yes",
+                onPress: async () => {
+                    const response = await fetch(`http://${SERVER_IP}:${PORT}/recipe?recipeId=${item.RecipeID}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    })
+                    const result = await response.json();
+                    if (result.status === 200) {
+                        Alert.alert("Success", "Recipe delete successfully");
+                        setRecipes(prev => prev.filter((i) => i.RecipeID != item.RecipeID))
+                    } else {
+                        Alert.alert("Fail", result.message);
+                    }
+                }
+            },
+            {
+                text: "No"
+            }
+        ])
+    }
+
     useEffect(() => {
         if (isFocused) {
             fetchRecipes();
@@ -72,29 +99,13 @@ const MyRecipes = () => {
                 <Text style={styles.recipeName}>{item.RecipeName}</Text>
             </View>
             <TouchableOpacity
-                onPress={() => {
-                    setRecipes(prev => prev.filter((i) => i.RecipeID != item.RecipeID));
-                }
-                }
+                onPress={() => handleRemoveRecipe(item)}
                 style={styles.deleteButton}
             >
                 <AntDesign name='delete' size={20} color='white' />
             </TouchableOpacity>
         </TouchableOpacity>
     );
-
-    // const handleDelete = async (recipeId) => {
-    //     const response = await fetch(`http://${SERVER_IP}:${PORT}/recipe?recipeId=${recipeId}`, {
-    //         method: 'DELETE'
-    //     })
-    //     const result = await response.json();
-    //     if (result.status == 200) {
-    //         Alert.alert("Success");
-    //         setRecipes((prev) => prev.filter((i) => i.RecipeID !== recipeId));
-    //     } else {
-    //         Alert.alert("Fail", result.message);
-    //     }
-    // }
 
     if (userId === -1) {
         return (

@@ -5,7 +5,7 @@ export default function DeletePlan({ dateToBuy, item, onDelete }) {
     const handleDelete = () => {
         const { itemName } = item;
 
-        fetch(`http://192.168.1.29:2811/list-item`, {
+        fetch(`http://192.168.1.9:2811/list-item`, {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ dateToBuy, itemName }),
@@ -13,7 +13,7 @@ export default function DeletePlan({ dateToBuy, item, onDelete }) {
             .then((response) => response.json())
             .then((data) => {
                 alert(data.message);
-                onDelete(itemName); 
+                onDelete(itemName);
             })
             .catch((error) => {
                 console.error('Error deleting item:', error);

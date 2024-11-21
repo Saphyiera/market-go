@@ -3,7 +3,7 @@ import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-nativ
 import { Calendar } from 'react-native-calendars';
 import { SERVER_IP, PORT } from '../../../backend/constant';
 import { TouchableOpacity } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
 
 export default function GroupPlans({ route }) {
     const { groupId } = route.params;
@@ -12,6 +12,7 @@ export default function GroupPlans({ route }) {
     const [loading, setLoading] = useState(false);
     const today = new Date();
     const navigation = useNavigation();
+    const isFocused = useIsFocused();
 
     const [currentMonth, setCurrentMonth] = useState({
         month: today.getMonth() + 1,
@@ -52,8 +53,10 @@ export default function GroupPlans({ route }) {
     };
 
     useEffect(() => {
-        fetchGroupPlans(currentMonth.month, currentMonth.year);
-    }, [currentMonth]);
+        if (isFocused) {
+            fetchGroupPlans(currentMonth.month, currentMonth.year);
+        }
+    }, [currentMonth, isFocused]);
 
     return (
         <View style={styles.container}>
@@ -84,7 +87,7 @@ export default function GroupPlans({ route }) {
                         renderItem={({ item }) => (
                             <TouchableOpacity
                                 style={styles.planItem}
-                                onPress={() => navigation.navigate('Plan', { listId: item.ListID })}>
+                                onPress={() => navigation.navigate('Plan', { listId: item.ListID, groupId: groupId, buyers: item.Buyers })}>
                                 <Text style={styles.dateText}>Date: {convertDate(new Date(item.DateToBuy).toLocaleDateString())}</Text>
                                 <Text style={styles.buyersHeader}>Buyers:</Text>
                                 {item.Buyers.map((buyer) => (

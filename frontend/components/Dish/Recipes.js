@@ -11,6 +11,7 @@ const Recipes = () => {
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(false);
     const [hasMore, setHasMore] = useState(true);
+    const [showActions, setShowActions] = useState(false);
 
     const fetchRecipes = async () => {
         if (loading || !hasMore) return;
@@ -66,8 +67,35 @@ const Recipes = () => {
 
     return (
         <View style={styles.container}>
-            <Button title='Add recipe' onPress={() => navigation.navigate('Add Recipe')}></Button>
-            <Button title='My recipes' onPress={() => navigation.navigate('My Recipes')}></Button>
+            <TouchableOpacity
+                style={styles.actionsButton}
+                onPress={() => setShowActions(!showActions)}
+            >
+                <Text style={styles.actionsButtonText}>Actions</Text>
+                {showActions && (
+                    <View style={styles.actionsContainer}>
+                        <TouchableOpacity
+                            style={styles.navButton}
+                            onPress={() => navigation.navigate('Add Recipe')}
+                        >
+                            <Text style={styles.navButtonText}>Add Recipe</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.navButton}
+                            onPress={() => navigation.navigate('My Recipes')}
+                        >
+                            <Text style={styles.navButtonText}>My Recipes</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.navButton}
+                            onPress={() => navigation.navigate('Search Recipe')}
+                        >
+                            <Text style={styles.navButtonText}>Find Recipes</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+            </TouchableOpacity>
+
             <FlatList
                 data={recipes}
                 renderItem={(props) => renderRecipeItem({ ...props, navigation })}
@@ -87,6 +115,49 @@ const styles = StyleSheet.create({
         flex: 1,
         padding: 16,
         backgroundColor: '#f8f9fa',
+    },
+    actionsButton: {
+        backgroundColor: '#fff',
+        paddingVertical: 15,
+        paddingHorizontal: 20,
+        borderRadius: 10,
+        alignItems: 'center',
+        marginBottom: 10,
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        shadowOffset: { width: 0, height: 3 },
+    },
+    actionsButtonText: {
+        color: '#000',
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    actionsContainer: {
+        marginTop: 10,
+        backgroundColor: '#f8f9fa',
+        paddingVertical: 10,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#ddd',
+        width: '100%'
+    },
+    navButton: {
+        backgroundColor: 'cornflowerblue',
+        paddingVertical: 12,
+        paddingHorizontal: 15,
+        borderRadius: 8,
+        marginVertical: 5,
+        marginHorizontal: 10,
+        borderWidth: 1,
+        borderColor: '#ddd',
+        alignItems: 'center',
+    },
+    navButtonText: {
+        fontSize: 16,
+        color: '#fff',
+        fontWeight: '600',
     },
     recipeContainer: {
         flexDirection: 'row',

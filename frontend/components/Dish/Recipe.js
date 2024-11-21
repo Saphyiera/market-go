@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Image, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SERVER_IP } from '../../../backend/constant';
+import AddDish from './AddDish';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Recipe({ route }) {
     const { recipeId } = route.params;
@@ -9,10 +11,23 @@ export default function Recipe({ route }) {
 
     const [recipe, setRecipe] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [userId, setUserId] = useState(null);
 
     useEffect(() => {
+        fetchUserId();
         fetchRecipe();
     }, []);
+
+    const fetchUserId = async () => {
+        try {
+            const storedUserId = await AsyncStorage.getItem('userID');
+            if (storedUserId) {
+                setUserId(storedUserId);
+            }
+        } catch (error) {
+            console.error('Error fetching userId from AsyncStorage:', error);
+        }
+    };
 
     const fetchRecipe = async () => {
         try {
@@ -51,6 +66,10 @@ export default function Recipe({ route }) {
 
             <Text style={styles.recipeTitle}>{recipe.RecipeName}</Text>
             <Text style={styles.username}>Posted by: {recipe.Username}</Text>
+
+            {
+                userId ? <AddDish userId={userId} recipeId={recipeId} /> : <Text style={styles.notAuthText}>Login to add this recipe to your dish plan!</Text>
+            }
 
             <Text style={styles.sectionTitle}>Ingredients:</Text>
             <View style={styles.ingredientsListContainer}>
@@ -176,4 +195,10 @@ const styles = StyleSheet.create({
         marginTop: 10,
         marginBottom: 20
     },
+    notAuthText: {
+        fontSize: 16,
+        color: 'cornflowerblue',
+        alignSelf: 'center',
+        fontWeight: '600'
+    }
 });

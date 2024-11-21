@@ -8,7 +8,7 @@ import AddPlan from './AddPlan';  // Import AddPlan component
 const { SERVER_IP, PORT } = require("../../../backend/constant");
 
 DailyList.defaultProps = {
-    onUpdate: () => {f}, 
+    onUpdate: () => {}, 
     onDelete: () => {}, 
 };
 
@@ -25,7 +25,7 @@ export default function Home() {
 
     const BASE_URL = `http://${SERVER_IP}:${PORT}`;
 
-
+    // Fetch plans from the backend
     const fetchPlans = () => {
         const userId = 0;
 

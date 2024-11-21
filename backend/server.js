@@ -237,54 +237,7 @@ app.get('/daily-list/month', (req, res) => {
 });
 
 
-app.post('/daily-list', (req, res) => {
-    const { listItems, dateToBuy, userId, cost } = req.body;
-    let listId;
 
-    // Kiểm tra dữ liệu đã nhận
-    console.log('Received data:', req.body);
-
-    // Lấy max ListID từ database
-    connection.query('SELECT MAX(ListID) AS maxListID FROM dailylist', (err, result) => {
-        if (err) {
-            console.error('Error fetching max ListID:', err);  // In lỗi chi tiết
-            return res.status(500).send('Error fetching max ListID');
-        }
-
-        listId = (result[0].maxListID || 0) + 1;
-
-        // Insert dữ liệu vào bảng dailylist
-        connection.query(
-            'INSERT INTO dailylist (ListID, UserID, DateToBuy, Cost) VALUES (?, ?, ?, ?)',
-            [listId, userId, dateToBuy, cost],
-            (err) => {
-                if (err) {
-                    console.error('Error inserting into dailylist:', err);  // In lỗi chi tiết
-                    return res.status(500).send('Error inserting into dailylist');
-                }
-
-                // Tạo các giá trị cần chèn vào bảng listitem
-                const listItemValues = listItems.map(item => [listId, item.ItemID, item.amount]);
-
-                // In ra listItemValues để kiểm tra
-                console.log('List items to insert:', listItemValues);
-
-                // Insert các item vào bảng listitem
-                connection.query(
-                    'INSERT INTO listitem (ListID, ItemID, Amount) VALUES ?',
-                    [listItemValues],
-                    (err) => {
-                        if (err) {
-                            console.error('Error inserting into listitem:', err);  // In lỗi chi tiết
-                            return res.status(500).send('Error inserting into listitem');
-                        }
-                        res.status(200).send({ message: 'Items added successfully' });
-                    }
-                );
-            }
-        );
-    });
-});
 
 
 app.get('/daily-list', (req, res) => {
@@ -329,6 +282,43 @@ app.get('/daily-list', (req, res) => {
     );
 });
 
+app.post('/daily-list', (req, res) => {
+    const { listItems, dateToBuy, userId, cost } = req.body;
+    let listId;
+
+    connection.query('SELECT MAX(ListID) AS maxListID FROM dailylist', (err, result) => {
+        if (err) {
+            return res.status(500).send('Error fetching max ListID');
+        }
+
+        listId = (result[0].maxListID || 0) + 1;
+
+        connection.query(
+            'INSERT INTO dailylist (ListID, UserID, DateToBuy, Cost) VALUES (?, ?, ?, ?)',
+            [listId, userId, dateToBuy, cost],
+            (err) => {
+                if (err) {
+                    return res.status(500).send('Error inserting into dailylist');
+                }
+
+                const listItemValues = listItems.map(item => [listId, item.ItemID, item.amount]);
+
+                connection.query(
+                    'INSERT INTO listitem (ListID, ItemID, Amount) VALUES ?',
+                    [listItemValues],
+                    (err) => {
+                        if (err) {
+                            return res.status(500).send('Error inserting into listitem');
+                        }
+                        res.status(200).send({ message: 'Items added successfully' });
+                    }
+                );
+            }
+        );
+    });
+});
+
+
 app.put('/daily-list', (req, res) => { // Update plan
     const { dateToBuy, itemName, newAmount } = req.body;
 
@@ -336,6 +326,7 @@ app.put('/daily-list', (req, res) => { // Update plan
         return res.status(400).json({ status: 400, message: "dateToBuy, itemName, and newAmount are required" });
     }
 
+    // Truy vấn cập nhật amount bằng cách nối bảng
     const query = `
         UPDATE listitem li
         INNER JOIN dailylist dl ON li.ListID = dl.ListID
@@ -1343,6 +1334,100 @@ app.get('/statistic', (req, res) => {
         }
     })
 });
+
+
+
+
+app.delete('/list-item', (req, res) => {
+    const { dateToBuy, itemName } = req.body;
+
+    if (!dateToBuy || !itemName) {
+        return res.status(400).json({ status: 400, message: "dateToBuy and itemName are required" });
+    }
+
+    connection.query(
+        'SELECT listitem.ListID, listitem.ItemID FROM listitem JOIN dailylist ON listitem.ListID = dailylist.ListID JOIN item ON listitem.ItemID = item.ItemID WHERE dailylist.DateToBuy = ? AND item.ItemName = ?',
+        [dateToBuy, itemName],
+        (err, results) => {
+            if (err) {
+                console.error('Error fetching data:', err);
+                return res.status(500).json({ status: 500, message: 'Error fetching data' });
+            }
+
+            if (results.length === 0) {
+                return res.status(404).json({ status: 404, message: "No matching item found" });
+            }
+
+            const { ListID, ItemID } = results[0];
+
+            connection.query(
+                'DELETE FROM listitem WHERE ListID = ? AND ItemID = ?',
+                [ListID, ItemID],
+                (err, result) => {
+                    if (err) {
+                        console.error('Error deleting list item:', err);
+                        return res.status(500).json({ status: 500, message: 'Error deleting list item' });
+                    }
+
+                    if (result.affectedRows === 0) {
+                        return res.status(404).json({ status: 404, message: "List item not found" });
+                    }
+
+                    connection.query(
+                        'DELETE FROM grouplist WHERE ListID = ?',
+                        [ListID],
+                        (err, deleteGrouplistResult) => {
+                            if (err) {
+                                console.error('Error deleting from grouplist:', err);
+                                return res.status(500).json({ status: 500, message: 'Error deleting from grouplist' });
+                            }
+
+                            connection.query(
+                                'SELECT COUNT(*) AS count FROM listitem WHERE ListID = ?',
+                                [ListID],
+                                (err, countResult) => {
+                                    if (err) {
+                                        console.error('Error checking remaining list items:', err);
+                                        return res.status(500).json({ status: 500, message: 'Error checking remaining list items' });
+                                    }
+
+                                    const count = countResult[0].count;
+
+                                    if (count === 0) {
+                                        connection.query(
+                                            'DELETE FROM dailylist WHERE ListID = ?',
+                                            [ListID],
+                                            (err, deleteResult) => {
+                                                if (err) {
+                                                    console.error('Error deleting daily list:', err);
+                                                    return res.status(500).json({ status: 500, message: 'Error deleting daily list' });
+                                                }
+
+                                                return res.status(200).json({
+                                                    status: 200,
+                                                    message: 'List item deleted, grouplist removed, and daily list removed successfully',
+                                                });
+                                            }
+                                        );
+                                    } else {
+                                        return res.status(200).json({
+                                            status: 200,
+                                            message: 'List item deleted and grouplist removed successfully',
+                                        });
+                                    }
+                                }
+                            );
+                        }
+                    );
+                }
+            );
+        }
+    );
+});
+
+
+
+
 
 app.post('/search/recipe', (req, res) => {
     const { name, ingredientIds, ownerIds } = req.body;

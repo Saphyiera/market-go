@@ -6,19 +6,16 @@ export default function AddPlan({ selectedDate, fetchPlans, onAdd }) {
     const [amount, setAmount] = useState('');
     const [listItems, setListItems] = useState([]);
 
-    // Hàm thêm item vào danh sách
     const addItemToList = () => {
-        // Kiểm tra dữ liệu nhập
         if (!itemID || !amount) {
             Alert.alert('Validation Error', 'Please enter both ItemID and Amount.');
             return;
         }
 
-        // Tạo item mới
         const newItem = { ItemID: parseInt(itemID.trim(), 10), amount: amount.trim() };
         setListItems(prevItems => [...prevItems, newItem]);
 
-        // Reset input
+
         setItemID('');
         setAmount('');
     };
@@ -29,7 +26,6 @@ export default function AddPlan({ selectedDate, fetchPlans, onAdd }) {
             return;
         }
 
-        // Dữ liệu cần gửi
         const newPlanData = {
             listItems,
             dateToBuy: selectedDate,
@@ -37,8 +33,7 @@ export default function AddPlan({ selectedDate, fetchPlans, onAdd }) {
             cost: 100,
         };
 
-        // Gửi yêu cầu POST mà không cần await
-        fetch('http://192.168.1.9:2811/daily-list', {
+        fetch('http://192.168.1.2:2811/daily-list', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -49,16 +44,16 @@ export default function AddPlan({ selectedDate, fetchPlans, onAdd }) {
             .then(data => {
                 if (data.message === 'Items added successfully') {
                     Alert.alert('Success', 'Plan added successfully!');
-                    fetchPlans(); // Làm mới danh sách kế hoạch
-                    setListItems([]); // Reset danh sách item
+                    fetchPlans();
+                    setListItems([]);
                 } else {
                     Alert.alert('Error', data.message || 'Error adding plan.');
                 }
             })
             .catch(error => {
-                console.error('ok:', error);
-                Alert.alert('ok', 'ok');
-                setListItems([]); // Reset danh sách khi có lỗi
+                console.error('Error:', error);
+                Alert.alert('Error', 'Please try again');
+                setListItems([]);
             });
 
     };

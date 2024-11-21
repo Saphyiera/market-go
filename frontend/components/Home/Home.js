@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, ScrollView } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import DailyList from './DailyList';
-import AddPlan from './AddPlan';  // Import AddPlan component
+import AddPlan from './AddPlan';  
 
 const { SERVER_IP, PORT } = require("../../../backend/constant");
 

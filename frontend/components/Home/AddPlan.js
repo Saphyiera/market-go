@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, TextInput, Button, FlatList, Text, StyleSheet, Alert } from 'react-native';
+const { SERVER_IP, PORT } = require("../../../backend/constant");
 
 export default function AddPlan({ selectedDate, fetchPlans, onAdd }) {
     const [itemID, setItemID] = useState('');
@@ -33,7 +34,7 @@ export default function AddPlan({ selectedDate, fetchPlans, onAdd }) {
             cost: 100,
         };
 
-        fetch('http://192.168.1.2:2811/daily-list', {
+        fetch(`http://${SERVER_IP}:${PORT}/daily-list`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

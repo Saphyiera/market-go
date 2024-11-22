@@ -1,43 +1,55 @@
-// Home.js
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, ScrollView } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native'; // Import hook
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Đảm bảo đã cài thư viện này
 import { Calendar } from 'react-native-calendars';
 import DailyList from './DailyList';
-import AddPlan from './AddPlan';  // Import AddPlan component
+import AddPlan from './AddPlan'; 
 
 const { SERVER_IP, PORT } = require("../../../backend/constant");
 
-DailyList.defaultProps = {
-    onUpdate: () => {}, 
-    onDelete: () => {}, 
-};
 
-
-export default function Home() {
-    const currentDate = new Date();
-    const currentMonth = (currentDate.getMonth() + 1).toString().padStart(2, '0');
-    const currentYear = currentDate.getFullYear().toString();
-
+export default function Home({ route }) {
+    const [userId, setUserId] = useState(null); 
     const [plans, setPlans] = useState([]);
-    const [month, setMonth] = useState(currentMonth);
-    const [year, setYear] = useState(currentYear);
+    const [month, setMonth] = useState(new Date().getMonth().toString().padStart(2, '0'));
+    const [year, setYear] = useState(new Date().getFullYear().toString());
     const [selectedDate, setSelectedDate] = useState(null);
 
     const BASE_URL = `http://${SERVER_IP}:${PORT}`;
 
-    // Fetch plans from the backend
-    const fetchPlans = () => {
-        const userId = 0;
-
-        fetch(`${BASE_URL}/daily-list/month?userId=${userId}&month=${month}&year=${year}`)
-            .then(response => response.json())
-            .then(data => setPlans(data))
-            .catch(error => console.error("Error fetching plans:", error));
+    const fetchUserId = async () => {
+        try {
+            const storedUserId = await AsyncStorage.getItem('userID');
+            if (storedUserId) {
+                setUserId(storedUserId);
+            } else {
+                console.error("No userID found in AsyncStorage.");
+            }
+        } catch (error) {
+            console.error("Error fetching userID:", error);
+        }
     };
 
-    useEffect(() => {
-        fetchPlans();
-    }, [,selectedDate,month, year]);
+    const fetchPlans = () => {
+        if (!userId) {
+            console.error("User ID is missing");
+            return;
+        }
+
+        fetch(`${BASE_URL}/daily-list/month?userId=${userId}&month=${month}&year=${year}`)
+            .then((response) => response.json())
+            .then((data) => setPlans(data))
+            .catch((error) => console.error("Error fetching plans:", error));
+    };
+
+    
+    useFocusEffect(
+        React.useCallback(() => {
+            fetchUserId(); 
+            fetchPlans(); 
+        }, [month, year, selectedDate])
+    );
 
     const markedDates = plans.reduce((acc, plan) => {
         acc[plan.dateToBuy] = { selectedColor: 'turquoise', selected: true, marked: true };
@@ -55,7 +67,6 @@ export default function Home() {
     const handleMonthChange = (date) => {
         const selectedMonth = date.month < 10 ? `0${date.month}` : `${date.month}`;
         const selectedYear = `${date.year}`;
-
         setMonth(selectedMonth);
         setYear(selectedYear);
     };
@@ -66,7 +77,7 @@ export default function Home() {
 
     const displayPlans = () => {
         if (selectedDate) {
-            const dailyPlans = plans.filter(plan => plan.dateToBuy === selectedDate);
+            const dailyPlans = plans.filter((plan) => plan.dateToBuy === selectedDate);
 
             return (
                 <View style={styles.selectedDateContainer}>
@@ -74,11 +85,11 @@ export default function Home() {
                     {dailyPlans.length > 0 ? (
                         <DailyList dateToBuy={selectedDate} listItem={dailyPlans[0].listItem} />
                     ) : (
-                        <AddPlan selectedDate={selectedDate} fetchPlans={fetchPlans} BASE_URL={BASE_URL} />
+                        <AddPlan selectedDate={selectedDate} fetchPlans={fetchPlans} uId={userId} />
                     )}
                 </View>
             );
-        } else {
+        } else if (plans.length > 0) {
             return (
                 <View style={styles.listContainer}>
                     {plans.map((plan, index) => (
@@ -86,8 +97,17 @@ export default function Home() {
                     ))}
                 </View>
             );
+        } else {
+            return (
+                <View style={styles.noPlansContainer}>
+                    <Text style={styles.noPlansText}>No plans available for this month.</Text>
+                </View>
+            );
         }
     };
+
+    
+
 
     return (
         <ScrollView style={styles.container}>
@@ -146,5 +166,13 @@ const styles = StyleSheet.create({
     },
     listContainer: {
         marginTop: 10,
+    },
+    noPlansContainer: {
+        padding: 20,
+        alignItems: 'center',
+    },
+    noPlansText: {
+        fontSize: 16,
+        color: '#777',
     },
 });

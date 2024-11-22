@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { TextInput, TouchableOpacity, Text, StyleSheet, View } from 'react-native';
-import { SERVER_IP, PORT } from '../../../backend/constant';
+const { SERVER_IP, PORT } = require("../../../backend/constant");
 
 export default function UpdatePlan({ dateToBuy, item, onUpdate, toggleEdit }) {
-    const [updatedAmount, setUpdatedAmount] = useState(item.amount); // Khởi tạo giá trị ban đầu
+    const [updatedAmount, setUpdatedAmount] = useState(item.amount);
 
     const handleUpdate = () => {
         const { itemName } = item;
 
-        // Gửi yêu cầu PUT để cập nhật
         fetch(`http://${SERVER_IP}:${PORT}/daily-list`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -16,9 +15,9 @@ export default function UpdatePlan({ dateToBuy, item, onUpdate, toggleEdit }) {
         })
             .then((response) => response.json())
             .then((data) => {
-                alert(data.message); // Thông báo thành công
-                onUpdate(itemName, { amount: updatedAmount }); // Cập nhật danh sách
-                toggleEdit(); // Tắt chế độ chỉnh sửa
+                alert(data.message);
+                onUpdate(itemName, { amount: updatedAmount });
+                toggleEdit();
             })
             .catch((error) => {
                 console.error('Error updating item:', error);

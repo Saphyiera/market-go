@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { View, TextInput, Button, FlatList, Text, StyleSheet, Alert } from 'react-native';
-import { SERVER_IP, PORT } from '../../../backend/constant';
+const { SERVER_IP, PORT } = require("../../../backend/constant");
 
-export default function AddPlan({ selectedDate, fetchPlans, onAdd }) {
+export default function AddPlan({ selectedDate, fetchPlans, uId }) {
     const [itemID, setItemID] = useState('');
     const [amount, setAmount] = useState('');
     const [listItems, setListItems] = useState([]);
@@ -30,7 +30,7 @@ export default function AddPlan({ selectedDate, fetchPlans, onAdd }) {
         const newPlanData = {
             listItems,
             dateToBuy: selectedDate,
-            userId: 0,
+            userId: uId,
             cost: 100,
         };
 

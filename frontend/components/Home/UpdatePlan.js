@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { TextInput, TouchableOpacity, Text, StyleSheet, View } from 'react-native';
+import { SERVER_IP, PORT } from '../../../backend/constant';
 
 export default function UpdatePlan({ dateToBuy, item, onUpdate, toggleEdit }) {
     const [updatedAmount, setUpdatedAmount] = useState(item.amount); // Khởi tạo giá trị ban đầu
@@ -8,7 +9,7 @@ export default function UpdatePlan({ dateToBuy, item, onUpdate, toggleEdit }) {
         const { itemName } = item;
 
         // Gửi yêu cầu PUT để cập nhật
-        fetch(`http://192.168.1.2:2811/daily-list`, {
+        fetch(`http://${SERVER_IP}:${PORT}/daily-list`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ dateToBuy, itemName, newAmount: updatedAmount }),

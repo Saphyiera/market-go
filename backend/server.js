@@ -237,8 +237,89 @@ app.get('/daily-list/month', (req, res) => {
 });
 
 
+app.get('/daily-list/next-30-days', (req, res) => {
+    const { userId } = req.query;
+    if (!userId) {
+        return res.status(400).json({ status: 400, message: "UserID is required" });
+    }
 
+    const today = new Date();
+    const next30Days = new Date();
+    next30Days.setDate(today.getDate() + 30);
 
+    connection.query(
+        `SELECT dl.DateToBuy, dl.Cost,
+                JSON_ARRAYAGG(
+                    JSON_OBJECT(
+                        'ListID', dl.ListID,
+                        'ItemID', li.ItemID,
+                        'Amount', li.Amount,
+                        'ItemName', i.ItemName
+                    )
+                ) AS Items
+         FROM dailylist dl 
+         INNER JOIN listitem li ON dl.ListID = li.ListID
+         INNER JOIN item i ON li.ItemID = i.ItemID
+         WHERE UserID = ? AND dl.DateToBuy BETWEEN ? AND ?
+         GROUP BY dl.DateToBuy, dl.Cost`,
+        [userId, today.toISOString().split('T')[0], next30Days.toISOString().split('T')[0]],
+        (err, result) => {
+            if (err) {
+                console.error(err);
+                res.status(500).json({ status: 500, message: "Server Error" });
+            } else {
+                res.json({ status: 200, data: result });
+            }
+        }
+    );
+});
+
+app.get('/daily-list/all', (req, res) => {
+    const { userId, page = 1, limit = 10 } = req.query;
+
+    if (!userId) {
+        return res.status(400).json({ status: 400, error: "Bad Request", message: "UserID is required" });
+    }
+
+    const offset = (page - 1) * parseInt(limit);
+
+    connection.query(
+        `SELECT dl.DateToBuy, 
+                dl.Cost, 
+                dl.ListID,
+                GROUP_CONCAT(
+                    JSON_OBJECT(
+                        'ItemID', li.ItemID, 
+                        'ItemName', i.ItemName, 
+                        'Amount', li.Amount
+                    )
+                ) AS Items
+         FROM dailylist dl
+         INNER JOIN listitem li ON dl.ListID = li.ListID
+         INNER JOIN item i ON li.ItemID = i.ItemID
+         WHERE UserID = ?
+         GROUP BY dl.DateToBuy, dl.Cost,dl.ListID
+         ORDER BY dl.DateToBuy DESC
+         LIMIT ? OFFSET ?`,
+        [userId, parseInt(limit), offset],
+        (err, result) => {
+            if (err) {
+                console.error(err);
+                res.status(500).json({ status: 500, error: "Internal Server Error", message: "Server Error" });
+            } else if (result.length === 0) {
+                res.status(404).json({ status: 404, error: "Not Found", message: "No daily lists found for this user." });
+            } else {
+                const formattedResult = result.map(row => ({
+                    ListID: row.ListID,
+                    DateToBuy: row.DateToBuy,
+                    Cost: row.Cost,
+                    Items: JSON.parse(`[${row.Items}]`),
+                }));
+                res.json({ status: 200, data: formattedResult });
+            }
+        }
+    );
+});
 
 app.get('/daily-list', (req, res) => {
     const { listId } = req.query;
@@ -955,9 +1036,10 @@ app.post('/group-list/share', (req, res) => {
     const { listId, groupId, userId } = req.body;
     const values = [groupId, listId, userId];
     connection.query(
-        `INSERT INTO grouplist(GroupID,ListID,BuyerID) VALUES ? ON DUPLICATE KEY UPDATE BuyersID = VALUES(BuyerID)`, [values], (err, result) => {
+        `INSERT INTO grouplist(GroupID,ListID,BuyerID) VALUES (?) ON DUPLICATE KEY UPDATE BuyerID = VALUES(BuyerID)`, [values], (err, result) => {
             if (err) {
-                res.json({ status: 500, message: err });
+                console.log(err);
+                res.status(500).json({ status: 500, message: "Server Error!" });
             } else {
                 res.json({ status: 200, data: result });
             }

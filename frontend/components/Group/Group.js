@@ -179,7 +179,10 @@ const Group = ({ route, navigation }) => {
                 )
             }
             <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Group Plans', { groupId: groupId })}>
-                <Text style={styles.buttonText}>Plans</Text>
+                <Text style={styles.buttonText}>Group Plans</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Share Your Plans', { groupId: groupId, userId: userId })}>
+                <Text style={styles.buttonText}>Share Your Daily List</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.button} onPress={() => setShowchangeImg(!showChangeImg)}>
                 <Text style={styles.buttonText}>Change Group Image</Text>
@@ -235,7 +238,7 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         alignItems: 'center',
         justifyContent: 'center',
-        marginVertical: 5,
+        marginVertical: 10,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,

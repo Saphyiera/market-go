@@ -35,6 +35,7 @@ import MyRecipe from './frontend/components/Dish/MyRecipe';
 import AccountSearch from './frontend/components/Account/AccountSearch';
 import RecipeSearch from './frontend/components/Dish/RecipeSearch';
 import CreateGroup from './frontend/components/Group/CreateGroup';
+import AllPlans from './frontend/components/Home/AllPlans';
 const Drawer = createDrawerNavigator();
 const Stack = createNativeStackNavigator();
 
@@ -144,6 +145,7 @@ const GroupStack = () => {
           <Stack.Screen name="Plan" component={Plan} />
           <Stack.Screen name="Plan Item" component={Item} options={{ title: "Item" }} />
           <Stack.Screen name='Create Group' component={CreateGroup} />
+          <Stack.Screen name='Share Your Plans' component={AllPlans} />
         </>
       ) : (
         <Stack.Screen name="Group No Auth" component={NotAuth} options={{ headerShown: false }} />

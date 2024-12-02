@@ -1,26 +1,11 @@
 const express = require('express')
-const mysql = require('mysql2')
 const multer = require('multer')
 const { formatPlans, formatFridgeItems, formatRecipes, formatRecipe, formatItem, isValidEmail, isValidPhoneNumber, formatUserInfo } = require('./middleware/middleware')
 const cors = require('cors')
-const { PASSWORD } = require('./constant')
+const connection = require('./db/connection')
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
-
-const connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: PASSWORD,
-    database: 'market'
-})
-
-connection.connect((err) => {
-    if (err) {
-        console.log("Can't connect to database!");
-    }
-    console.log("Connected to market database!");
-})
 
 const app = express()
 app.use(express.json())

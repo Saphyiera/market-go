@@ -6,6 +6,7 @@ import { Buffer } from 'buffer';
 import * as ImagePicker from 'expo-image-picker';
 import { useIsFocused } from '@react-navigation/native';
 import { SERVER_IP, PORT } from '../../../backend/constant';
+import NotificationButton from './NotificationButton';
 
 export default function Account() {
     const [info, setInfo] = useState(null);
@@ -106,6 +107,8 @@ export default function Account() {
 
     return (
         <ScrollView style={styles.container}>
+            <View style={styles.buttonSpacer} />
+            <NotificationButton />
             <View style={styles.profileContainer}>
                 <View style={styles.headerContainer}>
                     <TouchableOpacity style={styles.avatarContainer} onPress={handlePickAvatar}>

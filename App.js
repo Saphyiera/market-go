@@ -1,3 +1,4 @@
+import registerNNPushToken from 'native-notify';
 import './gesture-handler';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -36,6 +37,7 @@ import AccountSearch from './frontend/components/Account/AccountSearch';
 import RecipeSearch from './frontend/components/Dish/RecipeSearch';
 import CreateGroup from './frontend/components/Group/CreateGroup';
 import AllPlans from './frontend/components/Home/AllPlans';
+
 const Drawer = createDrawerNavigator();
 const Stack = createNativeStackNavigator();
 
@@ -172,6 +174,8 @@ const AppNavigator = () => {
 };
 
 export default function App() {
+  registerNNPushToken(25041, 'mF80USeXXVwmFYiJzGyVco');
+
   return (
     <NavigationContainer>
       <AppNavigator />

@@ -15,7 +15,7 @@ const Login = ({ navigation }) => {
         }
 
         try {
-            const response = await fetch(`http://${SERVER_IP}:${PORT}/login`, {
+            const response = await fetch(`http://${SERVER_IP}:${PORT}/user/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -4,13 +4,13 @@ import { useFocusEffect } from '@react-navigation/native'; // Import hook
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Đảm bảo đã cài thư viện này
 import { Calendar } from 'react-native-calendars';
 import DailyList from './DailyList';
-import AddPlan from './AddPlan'; 
+import AddPlan from './AddPlan';
 
 const { SERVER_IP, PORT } = require("../../../backend/constant");
 
 
 export default function Home({ route }) {
-    const [userId, setUserId] = useState(null); 
+    const [userId, setUserId] = useState(null);
     const [plans, setPlans] = useState([]);
     const [month, setMonth] = useState(new Date().getMonth().toString().padStart(2, '0'));
     const [year, setYear] = useState(new Date().getFullYear().toString());
@@ -43,11 +43,11 @@ export default function Home({ route }) {
             .catch((error) => console.error("Error fetching plans:", error));
     };
 
-    
+
     useFocusEffect(
         React.useCallback(() => {
-            fetchUserId(); 
-            fetchPlans(); 
+            fetchUserId();
+            fetchPlans();
         }, [month, year, selectedDate])
     );
 
@@ -106,7 +106,7 @@ export default function Home({ route }) {
         }
     };
 
-    
+
 
 
     return (

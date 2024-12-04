@@ -18,7 +18,7 @@ export default function UpdateProfile({ navigation }) {
                 const userId = await AsyncStorage.getItem('userID');
                 const response = await fetch(`http://${SERVER_IP}:${PORT}/user?userId=${userId}`);
                 const result = await response.json();
-                if (result.status === 200) {
+                if (response.status === 200) {
                     setInfo(result.data);
                     setUsername(result.data.Username);
                     setEmail(result.data.Email);

@@ -1,6 +1,11 @@
 const express = require('express')
 const multer = require('multer')
-const { formatPlans, formatFridgeItems, formatRecipes, formatRecipe, formatItem, isValidEmail, isValidPhoneNumber, formatUserInfo } = require('./middleware/middleware')
+function formatItem(data) {
+    return data.map(item => ({
+        ...item,
+        ItemImg: item.ItemImg ? item.ItemImg.toString('base64') : null,
+    }))
+}
 const cors = require('cors')
 const connection = require('./db/connection')
 
@@ -14,176 +19,92 @@ app.use(cors())
 app.listen(port = 2811, () => {
     console.log(`Server is listening on http:/localhost:${port}`)
 })
+app.post('/item', upload.single('image'), (req, res) => {
+    const { itemName, itemDescription } = req.body;
+    const itemImage = req.file.buffer;
 
-const isValidEmail = (email) => /\S+@\S+\.\S+/.test(email);
-
-const isValidPhoneNumber = (phone) => /^\d{10,15}$/.test(phone);
-
-app.post('/user/login', (req, res) => {
-    const { username, password } = req.body;
-
-    if (!username || !password) {
-        return res.status(400).json({ message: 'Username and password are required' });
-    }
-
-    const checkUsernameQuery = 'SELECT Password, UserID FROM user WHERE Username = ?';
-
-    connection.query(checkUsernameQuery, [username], (err, results) => {
+    connection.query('SELECT MAX(ItemID) AS maxId FROM item', (err, result) => {
         if (err) {
-            console.error('Error querying database:', err);
-            return res.status(500).json({ message: 'Server error' });
+            console.error('Error retrieving max ItemID:', err);
+            return res.status(500).send('Error retrieving item ID');
         }
 
-        if (results.length === 0) {
-            return res.status(404).json({ message: 'Username does not exist' });
-        }
+        const maxId = result[0].maxId;
+        const newItemId = maxId !== null ? maxId + 1 : 0;
 
-        const storedPassword = results[0].Password;
-        const userID = results[0].UserID;
-
-        if (storedPassword === password) {
-            res.status(200).json({ userID });
-        } else {
-            res.status(401).json({ message: 'Incorrect password' });
-        }
+        connection.query(
+            'INSERT INTO item (ItemID, ItemName, ItemDescription, ItemImg) VALUES (?, ?, ?, ?)',
+            [newItemId, itemName, itemDescription, itemImage],
+            (err) => {
+                if (err) {
+                    console.error('Error adding item:', err);
+                    return res.status(500).send('Error adding item');
+                }
+                res.status(200).send('Item added successfully');
+            }
+        );
     });
 });
 
-app.post('/user/signup', (req, res) => {
-    const { username, password, email, phoneNumber } = req.body;
+app.get('/item', (req, res) => {
+    const { id, name } = req.query;
 
-    if (!username || !password || !email || !phoneNumber) {
-        return res.status(400).json({ error: 'All fields are required' });
+    let query = '';
+    let params = [];
+
+    if (id) {
+        query = 'SELECT * FROM item WHERE ItemID = ?';
+        params = [id];
+    } else if (name) {
+        const nameParts = name.toLowerCase().split(' ');
+        const likeConditions = nameParts.map(() => `LOWER(ItemName) LIKE ?`).join(' OR ');
+
+        query = `SELECT * FROM item WHERE ${likeConditions}`;
+        params = nameParts.map(part => `%${part}%`);
+    } else {
+        return res.json({ status: 400, message: "No params: id or name" });
     }
 
-    if (!isValidEmail(email)) {
-        return res.status(400).json({ error: 'Invalid email format' });
-    }
-    if (!isValidPhoneNumber(phoneNumber)) {
-        return res.status(400).json({ error: 'Invalid phone number format' });
-    }
+    connection.query(query, params, (err, results) => {
+        if (err || results.length === 0) {
+            return res.json({ status: 404, message: "Not found item" });
+        }
+        console.log(results);
+        res.json({ status: 200, data: formatItem(results) });
+    });
+});
 
-    const queryCheck = 'SELECT * FROM user WHERE Username = ? OR Email = ?';
-    connection.query(queryCheck, [username, email], (err, results) => {
+app.get('/item/all', (req, res) => {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    connection.query('SELECT ItemID, ItemName, ItemDescription, ItemImg FROM item LIMIT ? OFFSET ?', [limit, offset], (err, results) => {
         if (err) {
-            console.error('Database error:', err);
-            return res.status(500).json({ error: 'Database error' });
+            return res.status(500).send('Error retrieving items');
         }
 
-        if (results.length > 0) {
-            return res.status(409).json({ error: 'Username or email already exists' });
-        }
+        const itemsWithImages = results.map(item => ({
+            ...item,
+            ItemImg: item.ItemImg ? item.ItemImg.toString('base64') : null,
+        }));
 
-        const queryMaxId = 'SELECT MAX(userId) AS maxUserId FROM user';
-        connection.query(queryMaxId, (err, results) => {
+        connection.query('SELECT COUNT(*) AS total FROM item', (err, countResult) => {
             if (err) {
-                console.error('Error getting max userId:', err);
-                return res.status(500).json({ error: 'Database error' });
+                return res.status(500).send('Error retrieving total item count');
             }
 
-            const newUserId = results[0].maxUserId != null ? results[0].maxUserId + 1 : 0;
+            const totalItems = countResult[0].total;
+            const totalPages = Math.ceil(totalItems / limit);
 
-            const queryInsert = 'INSERT INTO user (UserId, Username, Password, Email, PhoneNumber) VALUES (?, ?, ?, ?, ?)';
-            connection.query(queryInsert, [newUserId, username, password, email, phoneNumber], (err, result) => {
-                if (err) {
-                    console.error('Error inserting user:', err);
-                    return res.status(500).json({ error: 'Database error' });
-                }
-
-                res.status(201).json({ message: 'User registered successfully', userId: newUserId });
+            res.json({
+                items: itemsWithImages,
+                pagination: {
+                    currentPage: page,
+                    totalPages: totalPages,
+                    totalItems: totalItems,
+                },
             });
         });
     });
-});
-
-app.get('/user', (req, res) => {
-    const userId = req.query.userId;
-
-    if (!userId) {
-        return res.status(400).json({ error: 'User ID is required' });
-    }
-
-    const query = 'SELECT * FROM user WHERE UserId = ?';
-    connection.query(query, [userId], (err, results) => {
-        if (err) {
-            console.error('Error querying database:', err);
-            return res.json({ status: 500, error: 'Database error' });
-        }
-
-        if (results.length > 0) {
-            res.json({ status: 200, data: results[0] });
-        } else {
-            res.json({ status: 404, error: 'User not found' });
-        }
-    });
-});
-
-//Update info
-app.post('/user/info', (req, res) => {
-    const { userId, username, email, phoneNumber, introduction } = req.body;
-
-    if (!userId || !username || !email || !phoneNumber) {
-        return res.status(400).json({ error: 'userId, username, email, and phoneNumber are required' });
-    }
-
-    const queryUpdate = `
-        UPDATE user 
-        SET Username = ?, 
-            Email = ?, 
-            PhoneNumber = ?, 
-            Introduction = COALESCE(?, Introduction)
-        WHERE UserID = ?
-    `;
-
-    connection.query(
-        queryUpdate,
-        [username, email, phoneNumber, introduction, userId],
-        (err, result) => {
-            if (err) {
-                console.error('Error updating user info:', err);
-                return res.status(500).json({ error: 'Database error' });
-            }
-
-            if (result.affectedRows === 0) {
-                return res.status(404).json({ error: 'User not found' });
-            }
-
-            res.status(200).json({ message: 'User info updated successfully' });
-        }
-    );
-});
-
-//Update avatar
-app.post('/user/avatar', upload.single('avatar'), (req, res) => {
-    const userId = req.body.userId;
-
-    if (!userId || !req.file) {
-        console.log(userId, "+", req.file);
-        return res.status(400).json({ error: 'userId and avatar image are required' });
-    }
-
-    const avatarBuffer = req.file.buffer;
-
-    const queryUpdate = `
-        UPDATE user 
-        SET Avatar = ?
-        WHERE UserID = ?
-    `;
-
-    connection.query(
-        queryUpdate,
-        [avatarBuffer, userId],
-        (err, result) => {
-            if (err) {
-                console.error('Error updating avatar:', err);
-                return res.status(500).json({ error: 'Database error' });
-            }
-
-            if (result.affectedRows === 0) {
-                return res.status(404).json({ error: 'User not found' });
-            }
-
-            res.status(200).json({ message: 'Avatar updated successfully' });
-        }
-    );
 });

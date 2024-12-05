@@ -1,11 +1,12 @@
 const express = require('express')
 const multer = require('multer')
-const { formatPlans, formatFridgeItems, formatRecipes, formatRecipe, formatItem, formatUserInfo } = require('./middleware/middleware')
+const { formatPlans, formatRecipes, formatRecipe, formatUserInfo } = require('./middleware/middleware')
 const cors = require('cors')
 const connection = require('./db/connection')
 
 const userRouter = require('./routes/user')
 const itemRouter = require('./routes/item')
+const fridgeRouter = require('./routes/fridge')
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
@@ -244,91 +245,7 @@ app.put('/daily-list', (req, res) => { // Update plan
 
 app.use('/item', itemRouter);
 
-app.get('/fridge', (req, res) => {
-    const userId = parseInt(req.query.UserID, 10);
-    if (isNaN(userId)) {
-        return res.json({ status: 400, message: "Invalid UserID" });
-    }
-
-    connection.query(
-        `SELECT fridge.ItemID, ExpireDate, Amount, ItemName, ItemDescription, ItemImg
-         FROM fridge INNER JOIN item ON fridge.ItemID = item.ItemID
-         WHERE UserID = ?`, [userId],
-        (err, result) => {
-            if (err) {
-                console.log(err);
-                res.json({ status: 500, message: "Server error" });
-            } else if (result.length === 0) {
-                res.json({ status: 404, message: "No items found" });
-            } else {
-                res.json({ status: 200, data: formatFridgeItems(result) });
-            }
-        });
-});
-
-app.delete('/fridge/all', (req, res) => {
-    const userId = parseInt(req.query.UserID, 10);
-    if (isNaN(userId)) {
-        return res.json({ status: 400, message: "Invalid UserID" });
-    };
-    connection.query(
-        `DELETE FROM fridge WHERE UserID = ?`, [userId],
-        (err) => {
-            if (err) {
-                console.log(err);
-                res.json({ status: 500, message: "Server Error!" });
-            }
-            else {
-                res.json({ status: 200, message: "OK!" });
-            }
-        })
-})
-
-app.delete('/fridge/item', (req, res) => {
-    const userId = parseInt(req.query.UserID, 10);
-    const itemId = parseInt(req.query.ItemID, 10);
-
-    if (isNaN(userId) || isNaN(itemId)) {
-        return res.json({ status: 400, message: "Invalid UserID or ItemID" });
-    }
-
-    connection.query(
-        `DELETE FROM fridge WHERE UserID = ? AND ItemID = ?`, [userId, itemId],
-        (err) => {
-            if (err) {
-                console.log(err);
-                res.json({ status: 500, message: "Server Error!" });
-            } else {
-                res.json({ status: 200, message: "Item deleted successfully" });
-            }
-        }
-    );
-});
-
-app.post('/fridge/item', (req, res) => {
-    const { itemId, userId, expireDate, amount } = req.body;
-    console.log(req.body);
-
-    const query = `
-        INSERT INTO fridge (ItemID, UserID, ExpireDate, Amount)
-        VALUES (?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE 
-            Amount = VALUES(Amount)
-    `;
-
-    connection.query(query, [itemId, userId, expireDate, amount], (err, result) => {
-        if (err) {
-            console.error(err);
-            res.json({ status: 500, message: "Server error" });
-        } else {
-            if (result.affectedRows > 0) {
-                res.json({ status: 200, message: "Row inserted or updated successfully" });
-            } else {
-                res.json({ status: 404, message: "Row not found and not inserted" });
-            }
-        }
-    });
-});
+app.use('/fridge', fridgeRouter);
 
 app.post('/recipe', upload.single('recipeImg'), (req, res) => {
     const { userId, recipeName, instructions } = req.body;

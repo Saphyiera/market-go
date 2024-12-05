@@ -7,6 +7,7 @@ const connection = require('./db/connection')
 const userRouter = require('./routes/user')
 const itemRouter = require('./routes/item')
 const fridgeRouter = require('./routes/fridge')
+const statisticRouter = require('./routes/statistic')
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
@@ -20,6 +21,8 @@ app.listen(port = 2811, () => {
 })
 
 app.use('/user', userRouter);
+app.use('/item', itemRouter);
+app.use('/fridge', fridgeRouter);
 
 app.get('/daily-list/month', (req, res) => {
     const userId = req.query.userId;
@@ -242,10 +245,6 @@ app.put('/daily-list', (req, res) => { // Update plan
         }
     );
 });
-
-app.use('/item', itemRouter);
-
-app.use('/fridge', fridgeRouter);
 
 app.post('/recipe', upload.single('recipeImg'), (req, res) => {
     const { userId, recipeName, instructions } = req.body;
@@ -1037,25 +1036,7 @@ app.delete('/group/member', (req, res) => {
     });
 });
 
-app.get('/statistic', (req, res) => {
-    const { userId, startDate, endDate } = req.query;
-    connection.query(`
-        SELECT dl.DateToBuy, dl.Cost, li.ListID, li.ItemID, li.Amount, i.ItemName
-        FROM dailylist dl INNER JOIN listitem li ON dl.ListID = li.ListID INNER JOIN item i ON li.ItemID = i.ItemID
-        WHERE dl.UserID = ? AND dl.DateToBuy BETWEEN ? AND ?
-        ORDER BY dl.DateToBuy
-        `, [userId, startDate, endDate], (err, result) => {
-        if (err) {
-            console.error(err);
-            res.json({ status: 500, message: "Server Error" });
-        } else {
-            res.json({ status: 200, data: result });
-        }
-    })
-});
-
-
-
+app.use('/statistic', statisticRouter)
 
 app.delete('/list-item', (req, res) => {
     const { dateToBuy, itemName } = req.body;
@@ -1143,10 +1124,6 @@ app.delete('/list-item', (req, res) => {
         }
     );
 });
-
-
-
-
 
 app.post('/search/recipe', (req, res) => {
     const { name, ingredientIds, ownerIds } = req.body;

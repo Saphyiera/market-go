@@ -29,7 +29,7 @@ export default function MyRecipe({ route }) {
 
     const fetchRecipe = async () => {
         try {
-            const response = await fetch(`http://${SERVER_IP}:2811/v2/recipe?RecipeID=${recipeId}`);
+            const response = await fetch(`http://${SERVER_IP}:2811/recipe/v2?RecipeID=${recipeId}`);
             const json = await response.json();
             if (json.status === 200) {
                 setRecipe(json.data);

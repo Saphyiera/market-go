@@ -1,4 +1,27 @@
-app.get('/daily-list/month', (req, res) => {
+const express = require('express')
+const connection = require('../db/connection')
+const router = express.Router();
+
+function formatPlans(rawData) {
+    return rawData.reduce((acc, item) => {
+        const formattedDate = formatDate(item.DateToBuy);
+
+        let dateEntry = acc.find(plan => plan.dateToBuy === formattedDate);
+        if (!dateEntry) {
+            dateEntry = { dateToBuy: formattedDate, listItem: [] };
+            acc.push(dateEntry);
+        }
+
+        dateEntry.listItem.push({
+            itemName: item.ItemName,
+            amount: item.Amount
+        });
+
+        return acc;
+    }, []);
+}
+
+router.get('/month', (req, res) => {
     const userId = req.query.userId;
     const month = req.query.month;
     const year = req.query.year;
@@ -22,7 +45,7 @@ app.get('/daily-list/month', (req, res) => {
     );
 });
 
-app.get('/daily-list/next-30-days', (req, res) => {
+router.get('/next-30-days', (req, res) => {
     const { userId } = req.query;
     if (!userId) {
         return res.status(400).json({ status: 400, message: "UserID is required" });
@@ -59,7 +82,7 @@ app.get('/daily-list/next-30-days', (req, res) => {
     );
 });
 
-app.get('/daily-list/all', (req, res) => {
+router.get('/all', (req, res) => {
     const { userId, page = 1, limit = 10 } = req.query;
 
     if (!userId) {
@@ -106,7 +129,7 @@ app.get('/daily-list/all', (req, res) => {
     );
 });
 
-app.get('/daily-list', (req, res) => {
+router.get('/', (req, res) => {
     const { listId } = req.query;
 
     connection.query(
@@ -148,7 +171,7 @@ app.get('/daily-list', (req, res) => {
     );
 });
 
-app.post('/daily-list', (req, res) => {
+router.post('/', (req, res) => {
     const { listItems, dateToBuy, userId, cost } = req.body;
     let listId;
 
@@ -185,7 +208,7 @@ app.post('/daily-list', (req, res) => {
 });
 
 
-app.put('/daily-list', (req, res) => { // Update plan
+router.put('/', (req, res) => { // Update plan
     const { dateToBuy, itemName, newAmount } = req.body;
 
     if (!dateToBuy || !itemName || !newAmount) {
@@ -218,3 +241,5 @@ app.put('/daily-list', (req, res) => { // Update plan
         }
     );
 });
+
+module.exports = router;

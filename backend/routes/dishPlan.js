@@ -1,6 +1,7 @@
 const express = require('express')
 const connection = require('../db/connection')
 const router = express.Router();
+
 router.get('/', (req, res) => {
     const userId = req.query.userId;
     const month = req.query.month;

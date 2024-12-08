@@ -12,6 +12,7 @@ const dailyListRouter = require('./routes/dailyList')
 const dishPlanRouter = require('./routes/dishPlan')
 const groupListRouter = require('./routes/groupList')
 const groupRouter = require('./routes/group');
+const adminRouter = require('./routes/admin')
 
 const app = express()
 app.use(express.json())
@@ -30,7 +31,8 @@ app.use('/recipe', recipeRouter);
 app.use('/daily-list', dailyListRouter);
 app.use('/dish-plan', dishPlanRouter);
 app.use('/group-list', groupListRouter);
-app.use('/group', groupRouter)
+app.use('/group', groupRouter);
+app.use('/admin', adminRouter);
 
 app.delete('/list-item', (req, res) => {
     const { dateToBuy, itemName } = req.body;

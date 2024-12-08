@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 
 const { SERVER_IP } = require('../../../backend/constant');
 
-const Recipes = () => {
+const RecipesList = () => {
     const navigation = useNavigation();
     const [recipes, setRecipes] = useState([]);
     const [page, setPage] = useState(1);
@@ -201,4 +201,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default Recipes;
+export default RecipesList;

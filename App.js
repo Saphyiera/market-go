@@ -37,6 +37,8 @@ import AccountSearch from './frontend/components/Account/AccountSearch';
 import RecipeSearch from './frontend/components/Dish/RecipeSearch';
 import CreateGroup from './frontend/components/Group/CreateGroup';
 import AllPlans from './frontend/components/Home/AllPlans';
+import AccountsList from './frontend/components/Admin/AccountsList';
+import ItemsList from './frontend/components/Admin/ItemsList';
 
 const Drawer = createDrawerNavigator();
 const Stack = createNativeStackNavigator();
@@ -156,6 +158,13 @@ const GroupStack = () => {
   );
 };
 
+const AdminStack = () => {
+  return <Stack.Navigator initialRouteName='ItemsAdmin'>
+    <Stack.Screen name='AccountsAdmin' component={AccountsList} />
+    <Stack.Screen name='ItemsAdmin' component={ItemsList} options={{ title: "Items" }} />
+  </Stack.Navigator>
+}
+
 const AppNavigator = () => {
   return (
     <Drawer.Navigator initialRouteName='Home'>
@@ -169,6 +178,7 @@ const AppNavigator = () => {
       <Drawer.Screen name='Search' component={Search} />
       <Drawer.Screen name='Statistic' component={Statistic} />
       <Drawer.Screen name='Account Search' component={AccountSearch} />
+      <Drawer.Screen name='Admin Panel' component={AdminStack} />
     </Drawer.Navigator>
   );
 };

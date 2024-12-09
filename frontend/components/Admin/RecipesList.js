@@ -1,16 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, Image, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { View, Text, FlatList, StyleSheet, Image, ActivityIndicator } from 'react-native';
 
 const { SERVER_IP } = require('../../../backend/constant');
 
 const RecipesList = () => {
-    const navigation = useNavigation();
     const [recipes, setRecipes] = useState([]);
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(false);
     const [hasMore, setHasMore] = useState(true);
-    const [showActions, setShowActions] = useState(false);
 
     const fetchRecipes = async () => {
         if (loading || !hasMore) return;
@@ -37,14 +34,8 @@ const RecipesList = () => {
         fetchRecipes();
     }, [page]);
 
-    const renderRecipeItem = ({ item, navigation }) => (
-        <TouchableOpacity
-            key={item.RecipeID}
-            style={styles.recipeContainer}
-            onPress={() => {
-                navigation.navigate('Recipe', { recipeId: item.RecipeID });
-            }}
-        >
+    const renderRecipeItem = ({ item }) => (
+        <View style={styles.recipeContainer}>
             <View style={styles.imageContainer}>
                 {
                     item.RecipeImg ? (
@@ -61,43 +52,14 @@ const RecipesList = () => {
                 <Text style={styles.recipeName}>{item.RecipeName}</Text>
                 <Text style={styles.recipeUser}>By {item.Username}</Text>
             </View>
-        </TouchableOpacity>
+        </View>
     );
 
     return (
         <View style={styles.container}>
-            <TouchableOpacity
-                style={styles.actionsButton}
-                onPress={() => setShowActions(!showActions)}
-            >
-                <Text style={styles.actionsButtonText}>Actions</Text>
-                {showActions && (
-                    <View style={styles.actionsContainer}>
-                        <TouchableOpacity
-                            style={styles.navButton}
-                            onPress={() => navigation.navigate('Add Recipe')}
-                        >
-                            <Text style={styles.navButtonText}>Add Recipe</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={styles.navButton}
-                            onPress={() => navigation.navigate('My Recipes')}
-                        >
-                            <Text style={styles.navButtonText}>My Recipes</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={styles.navButton}
-                            onPress={() => navigation.navigate('Search Recipe')}
-                        >
-                            <Text style={styles.navButtonText}>Find Recipes</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-            </TouchableOpacity>
-
             <FlatList
                 data={recipes}
-                renderItem={(props) => renderRecipeItem({ ...props, navigation })}
+                renderItem={(props) => renderRecipeItem(props)}
                 keyExtractor={(item, index) => `${item.RecipeName}-${index}`}
                 onEndReached={() => setPage((prev) => prev + 1)}
                 onEndReachedThreshold={0.5}

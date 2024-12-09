@@ -39,6 +39,8 @@ import CreateGroup from './frontend/components/Group/CreateGroup';
 import AllPlans from './frontend/components/Home/AllPlans';
 import AccountsList from './frontend/components/Admin/AccountsList';
 import ItemsList from './frontend/components/Admin/ItemsList';
+import Categories from './frontend/components/Category/Categories';
+import CategoryItems from './frontend/components/Category/CategoryItems';
 
 const Drawer = createDrawerNavigator();
 const Stack = createNativeStackNavigator();
@@ -67,9 +69,16 @@ const DishStack = () => (
 const ItemStack = () => (
   <Stack.Navigator initialRouteName='All Items' >
     <Stack.Screen name='All Items' component={Items} options={{ headerShown: false }} />
-    <Drawer.Screen name='Item' component={Item} />
-    <Drawer.Screen name='Add Item' component={AddItem} />
-    <Drawer.Screen name='Search Item' component={ItemSearch} />
+    <Stack.Screen name='Item' component={Item} />
+    <Stack.Screen name='Add Item' component={AddItem} />
+    <Stack.Screen name='Search Item' component={ItemSearch} />
+  </Stack.Navigator>
+)
+
+const CategoryStack = () => (
+  <Stack.Navigator initialRouteName='Categories'>
+    <Stack.Screen name='Categories' component={Categories} />
+    <Stack.Screen name='Category Items' component={CategoryItems} />
   </Stack.Navigator>
 )
 
@@ -172,6 +181,7 @@ const AppNavigator = () => {
       <Drawer.Screen name='Home' component={Home} />
       <Drawer.Screen name='Groups Screen' component={GroupStack} options={{ title: 'Groups' }} />
       <Drawer.Screen name='Items' component={ItemStack} />
+      <Drawer.Screen name='Category' component={CategoryStack} />
       <Drawer.Screen name='Fridge' component={Fridge} initialParams={{ userId: 0 }} />
       <Drawer.Screen name='Recipes' component={RecipeStack} />
       <Drawer.Screen name='Dish' component={DishStack} />

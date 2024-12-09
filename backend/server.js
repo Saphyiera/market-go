@@ -12,7 +12,8 @@ const dailyListRouter = require('./routes/dailyList')
 const dishPlanRouter = require('./routes/dishPlan')
 const groupListRouter = require('./routes/groupList')
 const groupRouter = require('./routes/group');
-const adminRouter = require('./routes/admin')
+const adminRouter = require('./routes/admin');
+const categoryRouter = require('./routes/category');
 
 const app = express()
 app.use(express.json())
@@ -24,6 +25,7 @@ app.listen(port = 2811, () => {
 
 app.use('/user', userRouter);
 app.use('/item', itemRouter);
+app.use('/category', categoryRouter);
 app.use('/fridge', fridgeRouter);
 app.use('/statistic', statisticRouter);
 app.use('/search', searchRouter);

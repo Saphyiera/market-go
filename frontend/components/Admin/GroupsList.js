@@ -11,13 +11,14 @@ const GroupList = () => {
     const limit = 10;
 
     const fetchGroups = async (currentPage) => {
-        setLoading(true);
+        setLoading(true)
         try {
             const response = await fetch(`http://${SERVER_IP}:${PORT}/admin/group/all?page=${currentPage}&limit=${limit}`);
             const data = await response.json();
 
             if (data.status === 200) {
                 setGroups((prevGroups) => [...prevGroups, ...data.data]);
+                console.log(groups);
                 setTotal(data.total);
             } else {
                 console.warn(data.message);
@@ -26,6 +27,7 @@ const GroupList = () => {
             console.error('Error fetching groups:', error);
         } finally {
             setLoading(false);
+            console.log("OK");
         }
     };
 
@@ -62,7 +64,7 @@ const GroupList = () => {
                     renderItem={renderItem}
                     keyExtractor={(item) => item.GroupID.toString()}
                     onEndReached={handleLoadMore}
-                    onEndReachedThreshold={0.5}
+                    onEndReachedThreshold={0.4}
                     ListFooterComponent={
                         loading ? <ActivityIndicator size="small" color="#0000ff" /> : null
                     }

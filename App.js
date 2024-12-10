@@ -41,6 +41,12 @@ import AccountsList from './frontend/components/Admin/AccountsList';
 import ItemsList from './frontend/components/Admin/ItemsList';
 import Categories from './frontend/components/Category/Categories';
 import CategoryItems from './frontend/components/Category/CategoryItems';
+import AddCategory from './frontend/components/Admin/Addcategory';
+import CategoriesList from './frontend/components/Admin/CategoriesList';
+import UpdateCategory from './frontend/components/Admin/UpdateCategory';
+import RecipesList from './frontend/components/Admin/RecipesList';
+import GroupList from './frontend/components/Admin/GroupsList';
+import AdminPanel from './frontend/components/Admin/AdminPanel';
 
 const Drawer = createDrawerNavigator();
 const Stack = createNativeStackNavigator();
@@ -168,9 +174,15 @@ const GroupStack = () => {
 };
 
 const AdminStack = () => {
-  return <Stack.Navigator initialRouteName='ItemsAdmin'>
-    <Stack.Screen name='AccountsAdmin' component={AccountsList} />
-    <Stack.Screen name='ItemsAdmin' component={ItemsList} options={{ title: "Items" }} />
+  return <Stack.Navigator initialRouteName='Admin'>
+    <Stack.Screen name='Admin' component={AdminPanel} />
+    <Stack.Screen name='Accounts Admin' component={AccountsList} options={{ title: "Accounts" }} />
+    <Stack.Screen name='Items Admin' component={ItemsList} options={{ title: "Items" }} />
+    <Stack.Screen name='Add Category' component={AddCategory} />
+    <Stack.Screen name='Categories Admin' component={CategoriesList} options={{ title: "Category" }} />
+    <Stack.Screen name='Update Category' component={UpdateCategory} />
+    <Stack.Screen name='Recipes Admin' component={RecipesList} options={{ title: "Recipes" }} />
+    <Stack.Screen name='Groups Admin' component={GroupList} options={{ title: "Groups" }} />
   </Stack.Navigator>
 }
 

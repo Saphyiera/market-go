@@ -126,8 +126,7 @@ router.get('/group/all', (req, res) => {
     const offset = (page - 1) * limit;
     connection.query(
         `SELECT COUNT(*) AS total 
-         FROM groupmember gm 
-         INNER JOIN \`group\` g ON gm.GroupID = g.GroupID
+         FROM \`group\` g
          INNER JOIN \`user\` u ON g.AdminID = u.UserID `,
         (countErr, countResult) => {
             if (countErr) {
@@ -144,9 +143,8 @@ router.get('/group/all', (req, res) => {
             }
 
             connection.query(
-                `SELECT gm.GroupID, g.GroupName, g.AdminID, g.GroupImg, u.Username
-                 FROM groupmember gm 
-                 INNER JOIN \`group\` g ON gm.GroupID = g.GroupID
+                `SELECT g.GroupID, g.GroupName, g.AdminID, g.GroupImg, u.Username
+                 FROM \`group\` g
                  INNER JOIN \`user\` u ON g.AdminID = u.UserID
                  LIMIT ? OFFSET ?`,
                 [limit, offset],
@@ -155,6 +153,7 @@ router.get('/group/all', (req, res) => {
                         console.error(err);
                         res.json({ status: 500, message: "Server error!" });
                     } else {
+                        console.log(result)
                         res.json({
                             status: 200,
                             data: result,

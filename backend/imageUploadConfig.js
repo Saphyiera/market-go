@@ -27,4 +27,27 @@ const uploadBase64Image = async (base64Image) => {
     }
 };
 
-module.exports = { uploadBase64Image }
+const uploadImage = async (uri) => {
+    try {
+        if (!uri.startsWith('data:image/')) {
+            throw new Error('Invalid image URI. Must be an accessible URI.');
+        }
+        const uniqueFilename = `${uuid()}`;
+        const result = await cloudinary.uploader.upload(uri, {
+            public_id: uniqueFilename,
+            overwrite: true,
+            transformation: [
+                { quality: 'auto' },
+                { fetch_format: 'auto' }
+            ]
+        });
+
+        console.log('Image uploaded successfully:', result.url);
+        return result.url;
+    } catch (error) {
+        console.error('Error uploading image to Cloudinary:', error);
+        throw error;
+    }
+};
+
+module.exports = { uploadBase64Image, uploadImage }
